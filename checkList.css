@@ -1,0 +1,134 @@
+❌ - NOT OK
+⚠️ - UNNEXPECTED BEHAVIOR
+
+✅ GENERAL PRE-CHECKS
+[✅] .author file exists and correct
+[✅] make -n shows -Wall -Wextra -Werror flags
+[✅] make compiles with no errors
+[✅] make does not relink if nothing changed
+[❌] No memory leaks (valgrind / leaks) → No leaks or errors in summary
+
+✅ SIMPLE COMMANDS
+[✅] /bin/ls → prints directory listing
+[✅] /bin/echo Hello → prints: Hello
+[✅] Empty command → does nothing, no crash
+[✅] Only spaces/tabs → does nothing, no crash
+
+✅ ARGUMENTS
+[✅] /bin/echo Hello World → prints: Hello World
+[✅] /bin/ls -l -a → prints detailed directory list including hidden files
+[✅] Long command with many args → works, all args processed
+
+✅ echo BUILTIN
+[✅] echo Hello → prints: Hello
+[✅] echo -n Hello → prints: Hello (no newline)
+[✅] echo with multiple spaces → prints with single spaces between args
+[✅] echo (no args) → prints empty line
+
+✅ exit BUILTIN
+[✅] exit → minishell exits with status 0
+[✅] exit 42 → minishell exits with status 42
+[✅] exit 999 → minishell exits with status 231 (999 % 256)
+[❌] exit notanumber → prints error: "exit: notanumber: numeric argument required", exits with 255 (wrong exit code)
+
+✅ RETURN VALUE ($?)
+[✅] /bin/ls → echo $? → prints: 0
+[✅] /bin/ls not_a_file → echo $? → prints: non-zero (typically 2)
+[✅] expr $? + $? → correct arithmetic result
+
+✅ SIGNALS
+[✅] Ctrl-C (empty prompt) → new prompt on next line
+[✅] Ctrl-\ (empty prompt) → nothing happens
+[✅] Ctrl-D (empty prompt) → minishell exits
+[✅] Ctrl-C after typing → input cleared, new prompt
+[✅] Ctrl-D after typing → nothing happens
+[✅] Ctrl-C during `cat` → stops the command and shows prompt again
+[✅] Ctrl-\ during `cat` → command exits with "Quit: 3"
+[✅] Ctrl-D during `cat` → sends EOF, command finishes
+
+✅ DOUBLE QUOTES
+[✅] echo "Hello   world" → prints: Hello   world
+[✅] echo "cat lol.c | cat > lol.c" → prints: cat lol.c | cat > lol.c (not executed)
+
+✅ SINGLE QUOTES
+[✅] echo 'Hello     world' → prints: Hello     world
+[✅] echo '$USER' → prints: $USER
+[✅] echo 'cat lol.c' → prints: cat lol.c (not executed)
+
+✅ ENV BUILTIN
+[✅] env → prints full environment list (e.g., PATH, HOME, USER, etc.)
+
+✅ EXPORT BUILTIN
+[✅] export VAR=hello → sets VAR
+[✅] export VAR=newval → overwrites VAR
+[✅] env | grep VAR → prints: VAR=newval
+
+✅ UNSET BUILTIN
+[✅] export TOREMOVE=1 → sets TOREMOVE
+[✅] unset TOREMOVE → removes TOREMOVE
+[✅] env | grep TOREMOVE → no output
+
+✅ CD BUILTIN
+[✅] cd .. → goes to parent directory
+[✅] cd / → goes to root
+[✅] cd ./ or ./.. → behaves as expected
+[✅] cd /nonexistent → prints: cd: no such file or directory
+
+✅ PWD BUILTIN
+[✅] pwd → prints full path of current directory
+[✅] cd into another dir → pwd shows new path
+
+✅ RELATIVE PATH
+[✅] ./minishell → starts the shell if executable
+
+✅ ENVIRONMENT PATH
+[✅] ls → lists directory (PATH used)
+[✅] unset PATH → ls: command not found
+[✅] export PATH="/bin" → ls works again
+[✅] export PATH="fake:/bin" → searches /bin after fake fails
+
+✅ REDIRECTIONS
+[✅] echo Hello > file.txt → file.txt contains: Hello
+[✅] cat < file.txt → outputs: Hello
+[✅] echo World >> file.txt → appends: World
+[✅] ls > out1 > out2 → prints error or ignores one redirection
+[✅] Heredoc test:
+    $ cat << EOF
+    > test
+    > EOF
+  → prints: test
+
+✅ PIPES
+[✅] cat Makefile | grep all | wc -l → prints number of matching lines
+[✅] ls | grep minishell | wc -l → works, outputs count
+[✅] ls notafile | grep test → still runs grep, ls error printed
+[✅] Mix pipes and redirection → works as expected
+
+✅ GO CRAZY / HISTORY
+[✅] akjsdnaksd → prints error: command not found
+[✅] Very long command → works
+[✅] Ctrl-C during input → clears buffer and shows prompt
+[✅] Up/down arrow → shows previous/next commands
+
+✅ ENVIRONMENT VARIABLES
+[✅] export USER=testuser
+[✅] echo $USER → prints: testuser
+[✅] echo "$USER" → prints: testuser
+[❌] echo "'$USER'" → prints: 'testuser'
+
+⭐️ BONUS (Only if everything above passes)
+
+✅ LOGICAL OPERATORS
+[✅] true && echo YES → prints: YES
+[✅] false || echo NO → prints: NO
+[✅] false && echo NEVER → prints nothing
+[✅] (true || false) && echo CHAINED → prints: CHAINED
+
+✅ WILDCARDS
+[✅] echo *.c → lists all `.c` files in current dir
+[❌] echo src/*.c → lists all `.c` files in src/
+
+✅ SURPRISE TEST
+[✅] export USER=testuser
+[❌] echo "'$USER'" → prints: 'testuser'
+[✅] echo '"$USER"' → prints: "$USER"
