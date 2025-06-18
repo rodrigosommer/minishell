@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   free_utils.c                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rsommer <marvin@42.fr>                     +#+  +:+       +#+        */
+/*   By: hjuma <hjuma@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/05 16:26:59 by rsommer           #+#    #+#             */
-/*   Updated: 2025/06/05 16:27:00 by rsommer          ###   ########.fr       */
+/*   Updated: 2025/06/18 16:19:15 by hjuma            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,15 +14,16 @@
 
 void	free_array(char **array)
 {
+	int	i;
+
+	i = 0;
 	if (!array)
 		return ;
-	for (int i = 0; array[i]; i++)
+	while (array[i])
 	{
-		if (array[i])
-		{
-			free(array[i]);
-			array[i] = NULL;
-		}
+		free(array[i]);
+		array[i] = NULL;
+		i++;
 	}
 	free(array);
 }
