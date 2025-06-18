@@ -12,33 +12,55 @@
 
 #include "../../../includes/minishell.h"
 
-int	builtin_cd(t_cmd *cmd, t_env *env)
+static char	*get_cd_path(t_cmd *cmd, t_env *env)
 {
 	char	*path;
-	char	*oldpwd;
-	char	cwd[PATH_MAX];
 
 	if (!cmd->args[1] || !ft_strcmp(cmd->args[1], "~"))
 	{
 		path = get_env_value(env, "HOME");
 		if (!path)
-			return (print_error("cd", NULL, "HOME not set"), 1);
+		{
+			print_error("cd", NULL, "HOME not set");
+			return (NULL);
+		}
 	}
 	else if (!ft_strcmp(cmd->args[1], "-"))
 	{
 		path = get_env_value(env, "OLDPWD");
 		if (!path)
-			return (print_error("cd", NULL, "OLDPWD not set"), 1);
+		{
+			print_error("cd", NULL, "OLDPWD not set");
+			return (NULL);
+		}
 		ft_putendl_fd(path, STDOUT_FILENO);
 	}
 	else
 		path = cmd->args[1];
+	return (path);
+}
+
+int	builtin_cd(t_cmd *cmd, t_env *env)
+{
+	char	cwd[PATH_MAX];
+	char	*oldpwd;
+	char	*path;
+
+	path = get_cd_path(cmd, env);
+	if (!path)
+		return (1);
 	oldpwd = getcwd(cwd, PATH_MAX);
 	if (chdir(path) == -1)
-		return (print_error("cd", cmd->args[1], strerror(errno)), 1);
+	{
+		print_error("cd", cmd->args[1], strerror(errno));
+		return (1);
+	}
 	set_env_value(&env, "OLDPWD", oldpwd);
 	if (!getcwd(cwd, PATH_MAX))
-		return (print_error("cd", "getcwd", strerror(errno)), 1);
+	{
+		print_error("cd", "getcwd", strerror(errno));
+		return (1);
+	}
 	set_env_value(&env, "PWD", cwd);
 	return (0);
 }

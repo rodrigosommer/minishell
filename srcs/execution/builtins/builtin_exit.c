@@ -12,24 +12,32 @@
 
 #include "../../../includes/minishell.h"
 
-int builtin_exit(t_cmd *cmd, t_data *data)
+static int	get_exit_code(t_cmd *cmd, t_data *data, int *exit_code)
 {
-    int exit_code;
-    
-    ft_putendl_fd("exit", STDERR_FILENO);
-    if (!cmd->args[1])
-        exit_code = data->exit_status;
-    else if (cmd->args[2])
-        return (print_error("exit", NULL, "too many arguments"), 1);
-    else if (!ft_isdigit_str(cmd->args[1]))
-    {
-        print_error("exit", cmd->args[1], "numeric argument required");
-        exit_code = 2;
-    }
-    else
-        exit_code = ft_atoi(cmd->args[1]);
-    
-    // Add this line before exit to ensure complete cleanup
-    cleanup_shell(data);
-    exit(exit_code);
+	if (!cmd->args[1])
+		*exit_code = data->exit_status;
+	else if (cmd->args[2])
+	{
+		print_error("exit", NULL, "too many arguments");
+		return (1);
+	}
+	else if (!ft_isdigit_str(cmd->args[1]))
+	{
+		print_error("exit", cmd->args[1], "numeric argument required");
+		*exit_code = 2;
+	}
+	else
+		*exit_code = ft_atoi(cmd->args[1]);
+	return (0);
+}
+
+int	builtin_exit(t_cmd *cmd, t_data *data)
+{
+	int	exit_code;
+
+	ft_putendl_fd("exit", STDERR_FILENO);
+	if (get_exit_code(cmd, data, &exit_code))
+		return (1);
+	cleanup_shell(data);
+	exit(exit_code);
 }
