@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   parser.c                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rsommer <marvin@42.fr>                     +#+  +:+       +#+        */
+/*   By: hjuma <hjuma@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/05 16:21:17 by rsommer           #+#    #+#             */
-/*   Updated: 2025/06/05 16:21:35 by rsommer          ###   ########.fr       */
+/*   Updated: 2025/06/18 13:22:59 by hjuma            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,7 @@
 
 static int	is_redirection_token(char *token)
 {
-	return (!ft_strcmp(token, "<") || !ft_strcmp(token, ">") 
+	return (!ft_strcmp(token, "<") || !ft_strcmp(token, ">")
 		|| !ft_strcmp(token, "<<") || !ft_strcmp(token, ">>"));
 }
 
@@ -90,58 +90,60 @@ static void	add_token_to_args(t_cmd *cmd, char *token)
 	cmd->args = new_args;
 }
 
-t_cmd *parse_input(char *input, t_env *env, t_data *data)
+t_cmd	*parse_input(char *input, t_env *env, t_data *data)
 {
-    char **tokens = tokenize_input(input);
-    t_cmd *head = NULL;
-    t_cmd *current = NULL;
-    int i = 0;
+	char	**tokens;
+	t_cmd	*head;
+	t_cmd	*current;
+	int		i;
+	char	*expanded;
 
-    if (!tokens)
-        return NULL;
-
-    while (tokens[i])
-    {
-        if (!ft_strcmp(tokens[i], "|"))
-        {
-            if (!current || !current->args)
-            {
-                free_array(tokens);
-                free_commands(head);
-                return NULL;
-            }
-            current->next = create_command_node(NULL);
-            current = current->next;
-            free(tokens[i]);  // Free the token after using it
-            i++;
-            continue;
-        }
-
-        if (is_redirection_token(tokens[i]))
-        {
-            if (!current)
-                current = create_command_node(NULL);
-            if (handle_redirection(current, tokens, &i))
-            {
-                free_array(tokens + i);  // Free remaining tokens
-                free_commands(head);
-                return NULL;
-            }
-            free(tokens[i - 1]);  // Free the redirection token
-            continue;
-        }
-
-        if (!current)
-        {
-            current = create_command_node(NULL);
-            head = current;
-        }
-        char *expanded = expand_variables(tokens[i], env, data->exit_status);
-        add_token_to_args(current, expanded);
-        free(tokens[i]);  // Free the original token
-        free(expanded);   // Free the expanded string if not used
-        i++;
-    }
-    free(tokens);  // Free the tokens array itself
-    return head;
+	tokens = tokenize_input(input);
+	head = NULL;
+	current = NULL;
+	i = 0;
+	if (!tokens)
+		return (NULL);
+	while (tokens[i])
+	{
+		if (!ft_strcmp(tokens[i], "|"))
+		{
+			if (!current || !current->args)
+			{
+				free_array(tokens);
+				free_commands(head);
+				return (NULL);
+			}
+			current->next = create_command_node(NULL);
+			current = current->next;
+			free(tokens[i]);
+			i++;
+			continue ;
+		}
+		if (is_redirection_token(tokens[i]))
+		{
+			if (!current)
+				current = create_command_node(NULL);
+			if (handle_redirection(current, tokens, &i))
+			{
+				free_array(tokens + i);
+				free_commands(head);
+				return (NULL);
+			}
+			free(tokens[i - 1]);
+			continue ;
+		}
+		if (!current)
+		{
+			current = create_command_node(NULL);
+			head = current;
+		}
+		expanded = expand_variables(tokens[i], env, data->exit_status);
+		add_token_to_args(current, expanded);
+		free(tokens[i]);
+		free(expanded);
+		i++;
+	}
+	free(tokens);
+	return (head);
 }

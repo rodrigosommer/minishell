@@ -3,27 +3,22 @@
 /*                                                        :::      ::::::::   */
 /*   readline_utils.c                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rsommer <marvin@42.fr>                     +#+  +:+       +#+        */
+/*   By: hjuma <hjuma@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/16 00:39:27 by rsommer           #+#    #+#             */
-/*   Updated: 2025/06/16 00:39:29 by rsommer          ###   ########.fr       */
+/*   Updated: 2025/06/18 13:30:22 by hjuma            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../../includes/minishell.h"
-#include <readline/readline.h>
 #include <readline/history.h>
+#include <readline/readline.h>
 
-void clean_readline(void)
+void	clean_readline(void)
 {
-    // Clear any pending input
-    rl_free_line_state();
-    rl_clear_signals();
-    rl_cleanup_after_signal();
-    
-    // Free history entries
-    clear_history();
-    
-    // Free readline internal state
-    rl_clear_history();
+	rl_free_line_state();
+	rl_clear_signals();
+	rl_cleanup_after_signal();
+	clear_history();
+	rl_clear_history();
 }

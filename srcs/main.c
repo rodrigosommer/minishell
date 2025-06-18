@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.c                                             :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rsommer <marvin@42.fr>                     +#+  +:+       +#+        */
+/*   By: hjuma <hjuma@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/05 16:18:25 by rsommer           #+#    #+#             */
-/*   Updated: 2025/06/05 16:18:27 by rsommer          ###   ########.fr       */
+/*   Updated: 2025/06/18 13:27:37 by hjuma            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -61,27 +61,25 @@ void	run_shell(t_data *data)
 	}
 }
 
-void cleanup_shell(t_data *data)
+void	cleanup_shell(t_data *data)
 {
-    if (data->input)
-    {
-        free(data->input);
-        data->input = NULL;
-    }
-    if (data->cmd)
-    {
-        free_commands(data->cmd);
-        data->cmd = NULL;
-    }
-    if (data->env)
-    {
-        free_env(data->env);
-        data->env = NULL;
-    }
-    rl_clear_history();
-    
-    // Add these lines to clean up readline/internal allocations
-    rl_free_line_state();
-    rl_cleanup_after_signal();
-    clean_readline();
+	if (data->input)
+	{
+		free(data->input);
+		data->input = NULL;
+	}
+	if (data->cmd)
+	{
+		free_commands(data->cmd);
+		data->cmd = NULL;
+	}
+	if (data->env)
+	{
+		free_env(data->env);
+		data->env = NULL;
+	}
+	rl_clear_history();
+	rl_free_line_state();
+	rl_cleanup_after_signal();
+	clean_readline();
 }
