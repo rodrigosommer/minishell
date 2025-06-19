@@ -6,7 +6,7 @@
 /*   By: hjuma <hjuma@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/05 16:22:14 by rsommer           #+#    #+#             */
-/*   Updated: 2025/06/19 14:22:11 by hjuma            ###   ########.fr       */
+/*   Updated: 2025/06/19 15:56:14 by hjuma            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -87,6 +87,11 @@ static char	**env_to_array(t_env *env)
 	return (envp);
 }
 
+int	has_redirection(t_cmd *cmd)
+{
+	return (cmd->in_fd != STDIN_FILENO || cmd->out_fd != STDOUT_FILENO);
+}
+
 int	execute_command(t_cmd *cmd, t_env *env, t_data *data)
 {
 	pid_t	pid;
@@ -96,11 +101,9 @@ int	execute_command(t_cmd *cmd, t_env *env, t_data *data)
 
 	if (!cmd->args[0])
 		return (0);
-
 	// Handle built-in without fork if it's a single command
-	if (is_builtin(cmd) && !cmd->next)
+	if (is_builtin(cmd) && !cmd->next && !has_redirection(cmd))
 		return (execute_builtin(cmd, &env, data));
-
 	pid = fork();
 	if (pid == -1)
 	{
