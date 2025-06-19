@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   executor.c                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rsommer <marvin@42.fr>                     +#+  +:+       +#+        */
+/*   By: hjuma <hjuma@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/05 16:22:14 by rsommer           #+#    #+#             */
-/*   Updated: 2025/06/05 16:22:20 by rsommer          ###   ########.fr       */
+/*   Updated: 2025/06/19 14:22:11 by hjuma            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -92,14 +92,22 @@ int	execute_command(t_cmd *cmd, t_env *env, t_data *data)
 	pid_t	pid;
 	int		status;
 	char	**envp;
+	char	*path;
 
 	if (!cmd->args[0])
 		return (0);
+
+	// Handle built-in without fork if it's a single command
 	if (is_builtin(cmd) && !cmd->next)
 		return (execute_builtin(cmd, &env, data));
+
 	pid = fork();
 	if (pid == -1)
-		return (print_error("fork", NULL, strerror(errno)), 1);
+	{
+		print_error("fork", NULL, strerror(errno));
+		return (1);
+	}
+
 	if (pid == 0)
 	{
 		handle_redirections(cmd);
@@ -107,14 +115,57 @@ int	execute_command(t_cmd *cmd, t_env *env, t_data *data)
 			handle_pipes(cmd, env, data);
 		if (is_builtin(cmd))
 			exit(execute_builtin(cmd, &env, data));
+
 		envp = env_to_array(env);
-		execve(cmd->args[0], cmd->args, envp);
+		path = find_command_path(cmd->args[0], env);
+		if (!path)
+		{
+			print_error(cmd->args[0], NULL, "command not found");
+			free_array(envp);
+			exit(127);
+		}
+		execve(path, cmd->args, envp);
+		free(path);
 		free_array(envp);
 		print_error(cmd->args[0], NULL, strerror(errno));
 		exit(127);
 	}
+
+	// Parent process: wait and store status
 	waitpid(pid, &status, 0);
 	if (WIFEXITED(status))
 		data->exit_status = WEXITSTATUS(status);
+
 	return (0);
+}
+
+
+char	*find_command_path(char *cmd, t_env *env)
+{
+	char	**paths;
+	char	*path_env;
+	char	*full_path;
+	int		i;
+
+	if (!cmd || ft_strchr(cmd, '/')) // already a path
+		return (ft_strdup(cmd));
+
+	path_env = get_env_value(env, "PATH"); // you must have a get_env_value()
+	if (!path_env)
+		return (NULL);
+	paths = ft_split(path_env, ':'); // use your own split function
+	if (!paths)
+		return (NULL);
+
+	i = 0;
+	while (paths[i])
+	{
+		full_path = ft_strjoin3(paths[i], "/", cmd);
+		if (access(full_path, X_OK) == 0)
+			return (free_array(paths), full_path);
+		free(full_path);
+		i++;
+	}
+	free_array(paths);
+	return (NULL);
 }

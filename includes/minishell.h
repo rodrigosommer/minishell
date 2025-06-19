@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   minishell.h                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rsommer <marvin@42.fr>                     +#+  +:+       +#+        */
+/*   By: hjuma <hjuma@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/05 16:17:51 by rsommer           #+#    #+#             */
-/*   Updated: 2025/06/05 16:17:54 by rsommer          ###   ########.fr       */
+/*   Updated: 2025/06/19 14:18:16 by hjuma            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -80,6 +80,7 @@ int								execute_command(t_cmd *cmd, t_env *env,
 void							handle_redirections(t_cmd *cmd);
 int								handle_pipes(t_cmd *cmd, t_env *env,
 									t_data *data);
+char	*find_command_path(char *cmd, t_env *env);
 
 // Parsing
 t_cmd							*parse_input(char *input, t_env *env,
