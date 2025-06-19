@@ -72,7 +72,7 @@ static char	**env_to_array(t_env *env)
 		return (NULL);
 	i = 0;
 	temp = env;
-	while (temp)
+	while (temp && i < count)
 	{
 		if (temp->value)
 		{
