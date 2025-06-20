@@ -6,7 +6,7 @@
 /*   By: hjuma <hjuma@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/05 16:21:17 by rsommer           #+#    #+#             */
-/*   Updated: 2025/06/19 15:50:17 by hjuma            ###   ########.fr       */
+/*   Updated: 2025/06/20 11:07:35 by hjuma            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -90,7 +90,7 @@ static void	add_token_to_args(t_cmd *cmd, char *token)
 	cmd->args = new_args;
 }
 
-t_cmd	*parse_input(char *input, t_env *env, t_data *data)
+/*t_cmd	*parse_input(char *input, t_env *env, t_data *data)
 {
 	char	**tokens;
 	t_cmd	*head;
@@ -146,4 +146,84 @@ t_cmd	*parse_input(char *input, t_env *env, t_data *data)
 	}
 	free(tokens);
 	return (head);
+}*/
+
+static char *wrap_in_single_quotes(char *s)
+{
+	char *tmp = ft_strjoin(s, "'");
+	char *wrapped = ft_strjoin("'", tmp);
+	free(tmp);
+	return wrapped;
 }
+
+t_cmd	*parse_input(char *input, t_env *env, t_data *data)
+{
+	char	**tokens;
+	t_cmd	*head = NULL;
+	t_cmd	*current = NULL;
+	int		i = 0;
+	char	*expanded;
+	int		len;
+
+	tokens = tokenize_input(input);
+	if (!tokens)
+		return (NULL);
+	while (tokens[i])
+	{
+		if (!ft_strcmp(tokens[i], "|"))
+		{
+			if (!current || !current->args)
+				return (free_array(tokens), free_commands(head), NULL);
+			current->next = create_command_node(NULL);
+			current = current->next;
+			free(tokens[i++]);
+			continue;
+		}
+		if (is_redirection_token(tokens[i]))
+		{
+			if (!current)
+				current = create_command_node(NULL);
+			if (handle_redirection(current, tokens, &i))
+				return (free_array(tokens + i), free_commands(head), NULL);
+			free(tokens[i - 1]);
+			continue;
+		}
+		if (!current)
+		{
+			current = create_command_node(NULL);
+			head = current;
+		}
+
+		len = ft_strlen(tokens[i]);
+		if (tokens[i][0] == '\'' && tokens[i][ft_strlen(tokens[i]) - 1] == '\'')
+{
+	char *literal = ft_substr(tokens[i], 1, ft_strlen(tokens[i]) - 2);
+char *wrapped = wrap_in_single_quotes(literal);
+add_token_to_args(current, wrapped);
+free(literal);
+free(wrapped);
+}
+else if (tokens[i][0] == '"' && tokens[i][ft_strlen(tokens[i]) - 1] == '"')
+{
+	// Fully double-quoted: expand variables inside
+	char *stripped = ft_substr(tokens[i], 1, ft_strlen(tokens[i]) - 2);
+	expanded = expand_variables(stripped, env, data->exit_status);
+	add_token_to_args(current, expanded);
+	free(stripped);
+	free(expanded);
+}
+else
+{
+	// Unquoted or partial: expand as-is
+	expanded = expand_variables(tokens[i], env, data->exit_status);
+	add_token_to_args(current, expanded);
+	free(expanded);
+}
+
+		free(tokens[i]);
+		i++;
+	}
+	free(tokens);
+	return (head);
+}
+

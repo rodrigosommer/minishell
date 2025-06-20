@@ -21,7 +21,7 @@
 
 ❌ echo BUILTIN
 [✅] echo Hello → prints: Hello
-[❌] echo -n Hello → prints: Hello (no newline)
+[✅] echo -n Hello → prints: Hello (no newline)
 [✅] echo with multiple spaces → prints with single spaces between args
 [✅] echo (no args) → prints empty line
 
@@ -46,14 +46,14 @@
 [✅] Ctrl-\ during `cat` → command exits with "Quit: 3"
 [✅] Ctrl-D during `cat` → sends EOF, command finishes
 
-❌ DOUBLE QUOTES
+✅ DOUBLE QUOTES
 [✅] echo "Hello   world" → prints: Hello   world
-[❌] echo "cat lol.c | cat > lol.c" → prints: cat lol.c | cat > lol.c (not executed)
+[✅] echo "cat lol.c | cat > lol.c" → prints: cat lol.c | cat > lol.c (not executed)
 
-❌ SINGLE QUOTES
-[❌] echo 'Hello     world' → prints: Hello     world
-[❌] echo '$USER' → prints: $USER
-[❌] echo 'cat lol.c' → prints: cat lol.c (not executed)
+✅ SINGLE QUOTES
+[✅] echo 'Hello     world' → prints: Hello     world
+[✅] echo '$USER' → prints: $USER
+[✅] echo 'cat lol.c' → prints: cat lol.c (not executed)
 
 ✅ ENV BUILTIN
 [✅] env → prints full environment list (e.g., PATH, HOME, USER, etc.)
@@ -82,8 +82,8 @@
 [✅] ./minishell → starts the shell if executable
 
 ❌ ENVIRONMENT PATH
-[❌] ls → lists directory (PATH used)
-[❌] unset PATH → ls: command not found
+[✅] ls → lists directory (PATH used)
+[✅] unset PATH → ls: command not found
 [❌] export PATH="/bin" → ls works again
 [❌] export PATH="fake:/bin" → searches /bin after fake fails
 

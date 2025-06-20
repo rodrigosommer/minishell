@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   pipes.c                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rsommer <marvin@42.fr>                     +#+  +:+       +#+        */
+/*   By: hjuma <hjuma@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/05 16:23:12 by rsommer           #+#    #+#             */
-/*   Updated: 2025/06/05 16:23:17 by rsommer          ###   ########.fr       */
+/*   Updated: 2025/06/20 12:47:26 by hjuma            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,3 +39,4 @@ int	handle_pipes(t_cmd *cmd, t_env *env, t_data *data)
 		data->exit_status = WEXITSTATUS(status);
 	return (0);
 }
+
