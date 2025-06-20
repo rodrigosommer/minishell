@@ -89,8 +89,8 @@
 
 ❌ REDIRECTIONS
 [❌] echo Hello > file.txt → file.txt contains: Hello
-[❌] cat < file.txt → outputs: Hello
-[❌] echo World >> file.txt → appends: World
+[✅] cat < file.txt → outputs: Hello
+[✅] echo World >> file.txt → appends: World
 [✅] ls > out1 > out2 → prints error or ignores one redirection
 [✅] Heredoc test:
     $ cat << EOF
@@ -104,7 +104,7 @@
 [❌] ls notafile | grep test → still runs grep, ls error printed
 [❌] Mix pipes and redirection → works as expected
 
-❌ GO CRAZY / HISTORY
+ ❌GO CRAZY / HISTORY
 [❌] akjsdnaksd → prints error: command not found
 [✅] Very long command → works
 [✅] Ctrl-C during input → clears buffer and shows prompt
