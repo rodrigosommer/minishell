@@ -16,7 +16,7 @@ NAME = minishell
 SRC_DIR = srcs
 OBJ_DIR = objs
 LIBFT_DIR = libft
-FTPRINTF_DIR = ft_printf
+FTPRINTF_DIR = ./ft_printf
 
 # Source files
 SRCS = main.c \
