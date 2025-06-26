@@ -1,24 +1,22 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ft_print_str.c                                     :+:      :+:    :+:   */
+/*   executor_utils.h                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: hjuma <hjuma@student.42.fr>                +#+  +:+       +#+        */
+/*   By: rsommer <marvin@42.fr>                     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2024/10/30 16:46:31 by hjuma             #+#    #+#             */
-/*   Updated: 2024/11/04 09:47:41 by hjuma            ###   ########.fr       */
+/*   Created: 2025/06/26 07:18:05 by rsommer           #+#    #+#             */
+/*   Updated: 2025/06/26 07:19:21 by rsommer          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "ft_printf.h"
+#ifndef EXECUTOR_UTILS_H
+# define EXECUTOR_UTILS_H
 
-void	ft_print_str(char *str, int *size)
-{
-	if (str == NULL)
-		str = "(null)";
-	while (*str)
-	{
-		write (1, str++, 1);
-		(*size)++;
-	}
-}
+# include "minishell.h"
+
+int         is_builtin(t_cmd *cmd);
+int         execute_builtin(t_cmd *cmd, t_env **env, t_data *data);
+char        **env_to_array(t_env *env);
+
+#endif

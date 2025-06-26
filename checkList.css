@@ -46,14 +46,14 @@
 [✅] Ctrl-\ during `cat` → command exits with "Quit: 3"
 [✅] Ctrl-D during `cat` → sends EOF, command finishes
 
-✅ DOUBLE QUOTES
-[✅] echo "Hello   world" → prints: Hello   world
-[✅] echo "cat lol.c | cat > lol.c" → prints: cat lol.c | cat > lol.c (not executed)
+❌ DOUBLE QUOTES
+[❌] echo "Hello   world" → prints: Hello   world
+[❌] echo "cat lol.c | cat > lol.c" → prints: cat lol.c | cat > lol.c (not executed)
 
-✅ SINGLE QUOTES
-[✅] echo 'Hello     world' → prints: Hello     world
-[✅] echo '$USER' → prints: $USER
-[✅] echo 'cat lol.c' → prints: cat lol.c (not executed)
+❌ SINGLE QUOTES
+[❌] echo 'Hello     world' → prints: Hello     world
+[❌] echo '$USER' → prints: $USER
+[❌] echo 'cat lol.c' → prints: cat lol.c (not executed)
 
 ✅ ENV BUILTIN
 [✅] env → prints full environment list (e.g., PATH, HOME, USER, etc.)
@@ -113,22 +113,22 @@
 ✅ ENVIRONMENT VARIABLES
 [✅] export USER=testuser
 [✅] echo $USER → prints: testuser
-[✅] echo "$USER" → prints: testuser
+[❌] echo "$USER" → prints: testuser
 [❌] echo "'$USER'" → prints: 'testuser'
 
 ⭐️ BONUS (Only if everything above passes)
 
-✅ LOGICAL OPERATORS
-[✅] true && echo YES → prints: YES
-[✅] false || echo NO → prints: NO
-[✅] false && echo NEVER → prints nothing
-[✅] (true || false) && echo CHAINED → prints: CHAINED
+❌ LOGICAL OPERATORS
+[❌] true && echo YES → prints: YES
+[❌] false || echo NO → prints: NO
+[❌] false && echo NEVER → prints nothing
+[❌] (true || false) && echo CHAINED → prints: CHAINED
 
-✅ WILDCARDS
-[✅] echo *.c → lists all `.c` files in current dir
+❌ WILDCARDS
+[❌] echo *.c → lists all `.c` files in current dir
 [❌] echo src/*.c → lists all `.c` files in src/
 
 ✅ SURPRISE TEST
 [✅] export USER=testuser
 [❌] echo "'$USER'" → prints: 'testuser'
-[✅] echo '"$USER"' → prints: "$USER"
+[❌] echo '"$USER"' → prints: "$USER"
