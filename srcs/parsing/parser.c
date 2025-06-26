@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   parser.c                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: hjuma <hjuma@student.42.fr>                +#+  +:+       +#+        */
+/*   By: rsommer <marvin@42.fr>                     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/05 16:21:17 by rsommer           #+#    #+#             */
-/*   Updated: 2025/06/20 11:07:35 by hjuma            ###   ########.fr       */
+/*   Updated: 2025/06/05 16:21:35 by rsommer          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,36 +14,69 @@
 
 static int	is_redirection_token(char *token)
 {
-	return (!ft_strcmp(token, "<") || !ft_strcmp(token, ">")
+	return (!ft_strcmp(token, "<") || !ft_strcmp(token, ">") 
 		|| !ft_strcmp(token, "<<") || !ft_strcmp(token, ">>"));
 }
 
-static int	handle_redirection(t_cmd *cmd, char **tokens, int *i)
+static int handle_redirection(t_cmd *cmd, char **tokens, int *i)
 {
-	int		fd;
-	char	*file;
+    char *file;
+    int fd;
 
-	if (!tokens[*i + 1])
-		return (print_error("parser", NULL, "syntax error"), 1);
-	file = tokens[*i + 1];
-	if (!ft_strcmp(tokens[*i], "<"))
-		fd = open(file, O_RDONLY);
-	else if (!ft_strcmp(tokens[*i], ">"))
-		fd = open(file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-	else if (!ft_strcmp(tokens[*i], ">>"))
-		fd = open(file, O_WRONLY | O_CREAT | O_APPEND, 0644);
-	else if (!ft_strcmp(tokens[*i], "<<"))
-		fd = handle_heredoc(file);
-	else
-		return (0);
-	if (fd == -1)
-		return (print_error(file, NULL, strerror(errno)), 1);
-	if (!ft_strcmp(tokens[*i], "<") || !ft_strcmp(tokens[*i], "<<"))
-		cmd->in_fd = fd;
-	else
-		cmd->out_fd = fd;
-	(*i)++;
-	return (0);
+    if (!tokens[*i + 1]) {
+        print_error("syntax error", NULL, "missing file for redirection");
+        return 1;
+    }
+
+    file = tokens[*i + 1];
+
+    if (!ft_strcmp(tokens[*i], ">")) {
+        fd = open(file, O_WRONLY|O_CREAT|O_TRUNC, 0644);
+        if (fd == -1) {
+            print_error(file, NULL, strerror(errno));
+            return 1;
+        }
+        if (cmd->out_fd != STDOUT_FILENO)
+            close(cmd->out_fd);
+        cmd->out_fd = fd;
+    }
+    else if (!ft_strcmp(tokens[*i], ">>")) {
+        fd = open(file, O_WRONLY|O_CREAT|O_APPEND, 0644);
+        if (fd == -1) {
+            print_error(file, NULL, strerror(errno));
+            return 1;
+        }
+        if (cmd->out_fd != STDOUT_FILENO)
+            close(cmd->out_fd);
+        cmd->out_fd = fd;
+    }
+    else if (!ft_strcmp(tokens[*i], "<")) {
+        fd = open(file, O_RDONLY);
+        if (fd == -1) {
+            print_error(file, NULL, strerror(errno));
+            return 1;
+        }
+        if (cmd->in_fd != STDIN_FILENO)
+            close(cmd->in_fd);
+        cmd->in_fd = fd;
+    }
+    else if (!ft_strcmp(tokens[*i], "<<")) {
+        fd = handle_heredoc(file);
+        if (fd == -1)
+            return 1;
+        if (cmd->in_fd != STDIN_FILENO)
+            close(cmd->in_fd);
+        cmd->in_fd = fd;
+    }
+
+    // Remove redirection tokens from command args
+    free(tokens[*i]);
+    free(tokens[*i + 1]);
+    tokens[*i] = NULL;
+    tokens[*i + 1] = NULL;
+    *i += 1;
+
+    return 0;
 }
 
 static t_cmd	*create_command_node(char **args)
@@ -90,140 +123,51 @@ static void	add_token_to_args(t_cmd *cmd, char *token)
 	cmd->args = new_args;
 }
 
-/*t_cmd	*parse_input(char *input, t_env *env, t_data *data)
+t_cmd *parse_input(char *input, t_env *env, t_data *data)
 {
-	char	**tokens;
-	t_cmd	*head;
-	t_cmd	*current;
-	int		i;
-	char	*expanded;
+    char **tokens = tokenize_input(input);
+    t_cmd *head = NULL;
+    t_cmd *current = NULL;
+    int i = 0;
 
-	tokens = tokenize_input(input);
-	head = NULL;
-	current = NULL;
-	i = 0;
-	if (!tokens)
-		return (NULL);
-	while (tokens[i])
-	{
-		if (!ft_strcmp(tokens[i], "|"))
-		{
-			if (!current || !current->args)
-			{
-				free_array(tokens);
-				free_commands(head);
-				return (NULL);
-			}
-			current->next = create_command_node(NULL);
-			current = current->next;
-			free(tokens[i]);
-			i++;
-			continue ;
-		}
-		if (is_redirection_token(tokens[i]))
-		{
-			if (!current)
-				current = create_command_node(NULL);
-			if (handle_redirection(current, tokens, &i))
-			{
-				free_array(tokens + i);
-				free_commands(head);
-				return (NULL);
-			}
-			free(tokens[i - 1]);
-			continue ;
-		}
-		if (!current)
-		{
-			current = create_command_node(NULL);
-			head = current;
-		}
-		expanded = expand_variables(tokens[i], env, data->exit_status);
-		add_token_to_args(current, expanded);
-		free(tokens[i]);
-		free(expanded);
-		i++;
-	}
-	free(tokens);
-	return (head);
-}*/
+    if (!tokens)
+        return NULL;
 
-static char *wrap_in_single_quotes(char *s)
-{
-	char *tmp = ft_strjoin(s, "'");
-	char *wrapped = ft_strjoin("'", tmp);
-	free(tmp);
-	return wrapped;
+    current = create_command_node(NULL);
+    head = current;
+
+    while (tokens[i])
+    {
+        if (!ft_strcmp(tokens[i], "|"))
+        {
+            current->next = create_command_node(NULL);
+            current = current->next;
+            i++;
+            continue;
+        }
+
+        if (is_redirection_token(tokens[i]))
+        {
+            if (handle_redirection(current, tokens, &i)) {
+                free_array(tokens);
+                free_commands(head);
+                return NULL;
+            }
+            continue;
+        }
+
+        // Only add non-redirection tokens to command args
+        char *expanded = expand_variables(tokens[i], env, data->exit_status);
+        if (!expanded) {
+            free_array(tokens);
+            free_commands(head);
+            return NULL;
+        }
+        add_token_to_args(current, expanded);
+        free(expanded);
+        i++;
+    }
+
+    free_array(tokens);
+    return head;
 }
-
-t_cmd	*parse_input(char *input, t_env *env, t_data *data)
-{
-	char	**tokens;
-	t_cmd	*head = NULL;
-	t_cmd	*current = NULL;
-	int		i = 0;
-	char	*expanded;
-	int		len;
-
-	tokens = tokenize_input(input);
-	if (!tokens)
-		return (NULL);
-	while (tokens[i])
-	{
-		if (!ft_strcmp(tokens[i], "|"))
-		{
-			if (!current || !current->args)
-				return (free_array(tokens), free_commands(head), NULL);
-			current->next = create_command_node(NULL);
-			current = current->next;
-			free(tokens[i++]);
-			continue;
-		}
-		if (is_redirection_token(tokens[i]))
-		{
-			if (!current)
-				current = create_command_node(NULL);
-			if (handle_redirection(current, tokens, &i))
-				return (free_array(tokens + i), free_commands(head), NULL);
-			free(tokens[i - 1]);
-			continue;
-		}
-		if (!current)
-		{
-			current = create_command_node(NULL);
-			head = current;
-		}
-
-		len = ft_strlen(tokens[i]);
-		if (tokens[i][0] == '\'' && tokens[i][ft_strlen(tokens[i]) - 1] == '\'')
-{
-	char *literal = ft_substr(tokens[i], 1, ft_strlen(tokens[i]) - 2);
-char *wrapped = wrap_in_single_quotes(literal);
-add_token_to_args(current, wrapped);
-free(literal);
-free(wrapped);
-}
-else if (tokens[i][0] == '"' && tokens[i][ft_strlen(tokens[i]) - 1] == '"')
-{
-	// Fully double-quoted: expand variables inside
-	char *stripped = ft_substr(tokens[i], 1, ft_strlen(tokens[i]) - 2);
-	expanded = expand_variables(stripped, env, data->exit_status);
-	add_token_to_args(current, expanded);
-	free(stripped);
-	free(expanded);
-}
-else
-{
-	// Unquoted or partial: expand as-is
-	expanded = expand_variables(tokens[i], env, data->exit_status);
-	add_token_to_args(current, expanded);
-	free(expanded);
-}
-
-		free(tokens[i]);
-		i++;
-	}
-	free(tokens);
-	return (head);
-}
-

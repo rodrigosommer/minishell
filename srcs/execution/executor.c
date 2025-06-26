@@ -3,172 +3,255 @@
 /*                                                        :::      ::::::::   */
 /*   executor.c                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: hjuma <hjuma@student.42.fr>                +#+  +:+       +#+        */
+/*   By: rsommer <marvin@42.fr>                     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/05 16:22:14 by rsommer           #+#    #+#             */
-/*   Updated: 2025/06/19 15:56:14 by hjuma            ###   ########.fr       */
+/*   Updated: 2025/06/05 16:22:20 by rsommer          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../../includes/minishell.h"
+#include "../../includes/executor_utils.h"
 
-static int	is_builtin(t_cmd *cmd)
+static char *find_command_path(char *cmd, t_env *env)
 {
-	if (!cmd->args[0])
-		return (0);
-	if (!ft_strcmp(cmd->args[0], "echo"))
-		return (1);
-	if (!ft_strcmp(cmd->args[0], "cd"))
-		return (1);
-	if (!ft_strcmp(cmd->args[0], "pwd"))
-		return (1);
-	if (!ft_strcmp(cmd->args[0], "export"))
-		return (1);
-	if (!ft_strcmp(cmd->args[0], "unset"))
-		return (1);
-	if (!ft_strcmp(cmd->args[0], "env"))
-		return (1);
-	if (!ft_strcmp(cmd->args[0], "exit"))
-		return (1);
-	return (0);
+    char *full_path;
+    char *path_env;
+    char **paths;
+    int i;
+
+    if (access(cmd, X_OK) == 0)
+        return ft_strdup(cmd);
+
+    path_env = get_env_value(env, "PATH");
+    if (!path_env)
+        return NULL;
+
+    paths = ft_split(path_env, ':');
+    if (!paths)
+        return NULL;
+
+    i = -1;
+    while (paths[++i])
+    {
+        full_path = ft_strjoin3(paths[i], "/", cmd);
+        if (access(full_path, X_OK) == 0)
+        {
+            free_array(paths);
+            return full_path;
+        }
+        free(full_path);
+    }
+    free_array(paths);
+    return NULL;
 }
 
-static int	execute_builtin(t_cmd *cmd, t_env **env, t_data *data)
+int is_builtin(t_cmd *cmd)
 {
-	if (!ft_strcmp(cmd->args[0], "echo"))
-		return (builtin_echo(cmd));
-	if (!ft_strcmp(cmd->args[0], "cd"))
-		return (builtin_cd(cmd, *env));
-	if (!ft_strcmp(cmd->args[0], "pwd"))
-		return (builtin_pwd());
-	if (!ft_strcmp(cmd->args[0], "export"))
-		return (builtin_export(cmd, env));
-	if (!ft_strcmp(cmd->args[0], "unset"))
-		return (builtin_unset(cmd, env));
-	if (!ft_strcmp(cmd->args[0], "env"))
-		return (builtin_env(*env));
-	if (!ft_strcmp(cmd->args[0], "exit"))
-		builtin_exit(cmd, data);
-	return (0);
+    if (!cmd->args[0])
+        return (0);
+    if (!ft_strcmp(cmd->args[0], "echo"))
+        return (1);
+    if (!ft_strcmp(cmd->args[0], "cd"))
+        return (1);
+    if (!ft_strcmp(cmd->args[0], "pwd"))
+        return (1);
+    if (!ft_strcmp(cmd->args[0], "export"))
+        return (1);
+    if (!ft_strcmp(cmd->args[0], "unset"))
+        return (1);
+    if (!ft_strcmp(cmd->args[0], "env"))
+        return (1);
+    if (!ft_strcmp(cmd->args[0], "exit"))
+        return (1);
+    return (0);
 }
 
-static char	**env_to_array(t_env *env)
+int execute_builtin(t_cmd *cmd, t_env **env, t_data *data)
 {
-	char	**envp;
-	int		count;
-	int		i;
-	t_env	*temp;
+    int saved_stdout = -1;
+    int saved_stdin = -1;
+    int ret = 0;
 
-	count = 0;
-	temp = env;
-	while (temp)
-	{
-		if (temp->value)
-			count++;
-		temp = temp->next;
-	}
-	envp = malloc(sizeof(char *) * (count + 1));
-	if (!envp)
-		return (NULL);
-	i = 0;
-	temp = env;
-	while (temp && i < count)
-	{
-		if (temp->value)
-		{
-			envp[i] = ft_strjoin3(temp->key, "=", temp->value);
-			if (!envp[i])
-				return (free_array(envp), NULL);
-			i++;
-		}
-		temp = temp->next;
-	}
-	envp[i] = NULL;
-	return (envp);
+    // Apply output redirection first
+    if (cmd->out_fd != STDOUT_FILENO) {
+        saved_stdout = dup(STDOUT_FILENO);
+        if (saved_stdout == -1 || dup2(cmd->out_fd, STDOUT_FILENO) == -1) {
+            print_error("dup/dup2", NULL, strerror(errno));
+            if (saved_stdout != -1) close(saved_stdout);
+            return 1;
+        }
+        close(cmd->out_fd);  // Close the original fd after duplication
+    }
+
+    // Then apply input redirection
+    if (cmd->in_fd != STDIN_FILENO) {
+        saved_stdin = dup(STDIN_FILENO);
+        if (saved_stdin == -1 || dup2(cmd->in_fd, STDIN_FILENO) == -1) {
+            print_error("dup/dup2", NULL, strerror(errno));
+            // Clean up output redirection if it was set
+            if (saved_stdout != -1) {
+                dup2(saved_stdout, STDOUT_FILENO);
+                close(saved_stdout);
+            }
+            return 1;
+        }
+        close(cmd->in_fd);  // Close the original fd after duplication
+    }
+
+    // Execute the builtin command
+    if (!ft_strcmp(cmd->args[0], "echo"))
+        ret = builtin_echo(cmd);
+    else if (!ft_strcmp(cmd->args[0], "cd"))
+        ret = builtin_cd(cmd, *env);
+    else if (!ft_strcmp(cmd->args[0], "pwd"))
+        ret = builtin_pwd();
+    else if (!ft_strcmp(cmd->args[0], "export"))
+        ret = builtin_export(cmd, env);
+    else if (!ft_strcmp(cmd->args[0], "unset"))
+        ret = builtin_unset(cmd, env);
+    else if (!ft_strcmp(cmd->args[0], "env"))
+        ret = builtin_env(*env);
+    else if (!ft_strcmp(cmd->args[0], "exit"))
+        builtin_exit(cmd, data);
+
+    // Restore original file descriptors
+    if (saved_stdout != -1) {
+        dup2(saved_stdout, STDOUT_FILENO);
+        close(saved_stdout);
+    }
+    if (saved_stdin != -1) {
+        dup2(saved_stdin, STDIN_FILENO);
+        close(saved_stdin);
+    }
+
+    return ret;
 }
 
-int	has_redirection(t_cmd *cmd)
+char **env_to_array(t_env *env)
 {
-	return (cmd->in_fd != STDIN_FILENO || cmd->out_fd != STDOUT_FILENO);
+    t_env   *tmp;
+    char    **envp;
+    int     i;
+    int     count;
+
+    count = 0;
+    tmp = env;
+    while (tmp)
+    {
+        if (tmp->value)
+            count++;
+        tmp = tmp->next;
+    }
+    envp = malloc(sizeof(char *) * (count + 1));
+    if (!envp)
+        return (NULL);
+    i = 0;
+    tmp = env;
+    while (tmp && i < count)
+    {
+        if (tmp->value)
+        {
+            envp[i] = ft_strjoin3(tmp->key, "=", tmp->value);
+            if (!envp[i])
+                return (free_array(envp), NULL);
+            i++;
+        }
+        tmp = tmp->next;
+    }
+    envp[i] = NULL;
+    return (envp);
 }
 
-int	execute_command(t_cmd *cmd, t_env *env, t_data *data)
+void execute_child(t_cmd *cmd, t_env *env, t_data *data)
 {
-	pid_t	pid;
-	int		status;
-	char	**envp;
-	char	*path;
+    // Apply redirections
+    if (cmd->in_fd != STDIN_FILENO) {
+        dup2(cmd->in_fd, STDIN_FILENO);
+        close(cmd->in_fd);
+    }
+    if (cmd->out_fd != STDOUT_FILENO) {
+        dup2(cmd->out_fd, STDOUT_FILENO);
+        close(cmd->out_fd);
+    }
 
-	if (!cmd->args[0])
-		return (0);
-	// Handle built-in without fork if it's a single command
-	if (is_builtin(cmd) && !cmd->next && !has_redirection(cmd))
-		return (execute_builtin(cmd, &env, data));
-	pid = fork();
-	if (pid == -1)
-	{
-		print_error("fork", NULL, strerror(errno));
-		return (1);
-	}
+    if (is_builtin(cmd))
+        exit(execute_builtin(cmd, &env, data));
 
-	if (pid == 0)
-	{
-		handle_redirections(cmd);
-		if (cmd->next)
-			handle_pipes(cmd, env, data);
-		if (is_builtin(cmd))
-			exit(execute_builtin(cmd, &env, data));
+    char *path = find_command_path(cmd->args[0], env);
+    if (!path) {
+        print_error(cmd->args[0], NULL, "command not found");
+        exit(127);
+    }
 
-		envp = env_to_array(env);
-		path = find_command_path(cmd->args[0], env);
-		if (!path)
-		{
-			print_error(cmd->args[0], NULL, "command not found");
-			free_array(envp);
-			exit(127);
-		}
-		execve(path, cmd->args, envp);
-		free(path);
-		free_array(envp);
-		print_error(cmd->args[0], NULL, strerror(errno));
-		exit(127);
-	}
-
-	// Parent process: wait and store status
-	waitpid(pid, &status, 0);
-	if (WIFEXITED(status))
-		data->exit_status = WEXITSTATUS(status);
-
-	return (0);
+    char **envp = env_to_array(env);
+    execve(path, cmd->args, envp);
+    print_error(path, NULL, strerror(errno));
+    free(path);
+    free_array(envp);
+    exit(126);
 }
 
-
-char	*find_command_path(char *cmd, t_env *env)
+int execute_command(t_cmd *cmd, t_env *env, t_data *data)
 {
-	char	**paths;
-	char	*path_env;
-	char	*full_path;
-	int		i;
+    pid_t pid;
+    int status;
 
-	if (!cmd || ft_strchr(cmd, '/')) // already a path
-		return (ft_strdup(cmd));
+    if (!cmd->args[0])
+        return 0;
 
-	path_env = get_env_value(env, "PATH"); // you must have a get_env_value()
-	if (!path_env)
-		return (NULL);
-	paths = ft_split(path_env, ':'); // use your own split function
-	if (!paths)
-		return (NULL);
+    if (is_builtin(cmd) && !cmd->next)
+        return execute_builtin(cmd, &env, data);
 
-	i = 0;
-	while (paths[i])
-	{
-		full_path = ft_strjoin3(paths[i], "/", cmd);
-		if (access(full_path, X_OK) == 0)
-			return (free_array(paths), full_path);
-		free(full_path);
-		i++;
-	}
-	free_array(paths);
-	return (NULL);
+    pid = fork();
+    if (pid == -1)
+        return (print_error("fork", NULL, strerror(errno)), 1);
+
+    if (pid == 0) {
+        // Apply input redirection first
+        if (cmd->in_fd != STDIN_FILENO) {
+            if (dup2(cmd->in_fd, STDIN_FILENO) == -1) {
+                print_error("dup2", NULL, strerror(errno));
+                exit(EXIT_FAILURE);
+            }
+            close(cmd->in_fd);
+        }
+
+        // Then apply output redirection
+        if (cmd->out_fd != STDOUT_FILENO) {
+            if (dup2(cmd->out_fd, STDOUT_FILENO) == -1) {
+                print_error("dup2", NULL, strerror(errno));
+                exit(EXIT_FAILURE);
+            }
+            close(cmd->out_fd);
+        }
+
+        if (is_builtin(cmd))
+            exit(execute_builtin(cmd, &env, data));
+
+        char *path = find_command_path(cmd->args[0], env);
+        if (!path) {
+            print_error(cmd->args[0], NULL, "command not found");
+            exit(127);
+        }
+
+        char **envp = env_to_array(env);
+        execve(path, cmd->args, envp);
+        print_error(path, NULL, strerror(errno));
+        free(path);
+        free_array(envp);
+        exit(126);
+    }
+    else {
+        // Close file descriptors in parent
+        if (cmd->in_fd != STDIN_FILENO)
+            close(cmd->in_fd);
+        if (cmd->out_fd != STDOUT_FILENO)
+            close(cmd->out_fd);
+
+        waitpid(pid, &status, 0);
+        if (WIFEXITED(status))
+            data->exit_status = WEXITSTATUS(status);
+    }
+    return 0;
 }

@@ -87,8 +87,8 @@
 [❌] export PATH="/bin" → ls works again
 [❌] export PATH="fake:/bin" → searches /bin after fake fails
 
-❌ REDIRECTIONS
-[❌] echo Hello > file.txt → file.txt contains: Hello
+✅ REDIRECTIONS
+[✅] echo Hello > file.txt → file.txt contains: Hello
 [✅] cat < file.txt → outputs: Hello
 [✅] echo World >> file.txt → appends: World
 [✅] ls > out1 > out2 → prints error or ignores one redirection

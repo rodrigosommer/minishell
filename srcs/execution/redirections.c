@@ -12,42 +12,46 @@
 
 #include "../../includes/minishell.h"
 
-void	handle_redirections(t_cmd *cmd)
+void handle_redirections(t_cmd *cmd)
 {
-	if (cmd->in_fd != STDIN_FILENO)
-	{
-		dup2(cmd->in_fd, STDIN_FILENO);
-		close(cmd->in_fd);
-	}
-	if (cmd->out_fd != STDOUT_FILENO)
-	{
-		dup2(cmd->out_fd, STDOUT_FILENO);
-		close(cmd->out_fd);
-	}
+    if (cmd->in_fd != STDIN_FILENO) {
+        if (dup2(cmd->in_fd, STDIN_FILENO) == -1) {
+            print_error("dup2", NULL, strerror(errno));
+            exit(EXIT_FAILURE);
+        }
+        close(cmd->in_fd);
+    }
+    if (cmd->out_fd != STDOUT_FILENO) {
+        if (dup2(cmd->out_fd, STDOUT_FILENO) == -1) {
+            print_error("dup2", NULL, strerror(errno));
+            exit(EXIT_FAILURE);
+        }
+        close(cmd->out_fd);
+    }
 }
 
-int	handle_heredoc(char *delimiter)
+int handle_heredoc(char *delimiter)
 {
-	int		fd;
-	char	*line;
-
-	fd = open("/tmp/minishell_heredoc", O_WRONLY | O_CREAT | O_TRUNC, 0644);
-	if (fd == -1)
-		return (-1);
-	while (1)
-	{
-		line = readline("> ");
-		if (!line || !ft_strcmp(line, delimiter))
-		{
-			free(line);
-			break ;
-		}
-		ft_putendl_fd(line, fd);
-		free(line);
-	}
-	close(fd);
-	fd = open("/tmp/minishell_heredoc", O_RDONLY);
-	if (fd == -1)
-		return (-1);
-	return (fd);
+    int fd[2];
+    char *line;
+    
+    if (pipe(fd) == -1)
+        return -1;
+    
+    while (1) {
+        line = readline("> ");
+        if (!line) {
+            ft_putstr_fd("minishell: warning: here-document delimited by end-of-file\n", STDERR_FILENO);
+            break;
+        }
+        if (!ft_strcmp(line, delimiter)) {
+            free(line);
+            break;
+        }
+        write(fd[1], line, strlen(line));
+        write(fd[1], "\n", 1);
+        free(line);
+    }
+    close(fd[1]);
+    return fd[0];
 }
