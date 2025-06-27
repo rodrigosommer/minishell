@@ -20,23 +20,32 @@ static char *find_command_path(char *cmd, t_env *env)
     char **paths;
     int i;
 
-    if (access(cmd, X_OK) == 0)
-        return ft_strdup(cmd);
-
-    path_env = get_env_value(env, "PATH");
-    if (!path_env)
+    // Check if command is a path (contains '/')
+    if (ft_strchr(cmd, '/')) {
+        if (access(cmd, X_OK) == 0)
+            return ft_strdup(cmd);
         return NULL;
+    }
+
+    // Get PATH from environment
+    path_env = get_env_value(env, "PATH");
+    if (!path_env) {
+        print_error(cmd, NULL, "No PATH variable set");
+        return NULL;
+    }
 
     paths = ft_split(path_env, ':');
     if (!paths)
         return NULL;
 
     i = -1;
-    while (paths[++i])
-    {
+    while (paths[++i]) {
         full_path = ft_strjoin3(paths[i], "/", cmd);
-        if (access(full_path, X_OK) == 0)
-        {
+        if (!full_path) {
+            free_array(paths);
+            return NULL;
+        }
+        if (access(full_path, X_OK) == 0) {
             free_array(paths);
             return full_path;
         }
@@ -69,34 +78,17 @@ int is_builtin(t_cmd *cmd)
 
 int execute_builtin(t_cmd *cmd, t_env **env, t_data *data)
 {
-    int saved_stdout = -1;
-    int saved_stdin = -1;
+    int saved_stdout = dup(STDOUT_FILENO);
+    int saved_stdin = dup(STDIN_FILENO);
     int ret = 0;
 
-    // Apply output redirection first
     if (cmd->out_fd != STDOUT_FILENO) {
-        saved_stdout = dup(STDOUT_FILENO);
-        if (saved_stdout == -1 || dup2(cmd->out_fd, STDOUT_FILENO) == -1) {
-            print_error("dup/dup2", NULL, strerror(errno));
-            if (saved_stdout != -1) close(saved_stdout);
-            return 1;
-        }
-        close(cmd->out_fd);  // Close the original fd after duplication
+        dup2(cmd->out_fd, STDOUT_FILENO);
+        close(cmd->out_fd);
     }
-
-    // Then apply input redirection
     if (cmd->in_fd != STDIN_FILENO) {
-        saved_stdin = dup(STDIN_FILENO);
-        if (saved_stdin == -1 || dup2(cmd->in_fd, STDIN_FILENO) == -1) {
-            print_error("dup/dup2", NULL, strerror(errno));
-            // Clean up output redirection if it was set
-            if (saved_stdout != -1) {
-                dup2(saved_stdout, STDOUT_FILENO);
-                close(saved_stdout);
-            }
-            return 1;
-        }
-        close(cmd->in_fd);  // Close the original fd after duplication
+        dup2(cmd->in_fd, STDIN_FILENO);
+        close(cmd->in_fd);
     }
 
     // Execute the builtin command
@@ -124,6 +116,11 @@ int execute_builtin(t_cmd *cmd, t_env **env, t_data *data)
         dup2(saved_stdin, STDIN_FILENO);
         close(saved_stdin);
     }
+    
+    dup2(saved_stdout, STDOUT_FILENO);
+    dup2(saved_stdin, STDIN_FILENO);
+    close(saved_stdout);
+    close(saved_stdin);
 
     return ret;
 }
@@ -165,18 +162,40 @@ char **env_to_array(t_env *env)
 
 void execute_child(t_cmd *cmd, t_env *env, t_data *data)
 {
-    // Apply redirections
+    // Handle input redirection
     if (cmd->in_fd != STDIN_FILENO) {
-        dup2(cmd->in_fd, STDIN_FILENO);
+        if (cmd->in_fd < 0) {
+            print_error("dup2", NULL, "Bad input file descriptor");
+            exit(EXIT_FAILURE);
+        }
+        if (dup2(cmd->in_fd, STDIN_FILENO) == -1) {
+            print_error("dup2", NULL, strerror(errno));
+            exit(EXIT_FAILURE);
+        }
         close(cmd->in_fd);
     }
+
+    // Handle output redirection
     if (cmd->out_fd != STDOUT_FILENO) {
-        dup2(cmd->out_fd, STDOUT_FILENO);
+        if (cmd->out_fd < 0) {
+            print_error("dup2", NULL, "Bad output file descriptor");
+            exit(EXIT_FAILURE);
+        }
+        if (dup2(cmd->out_fd, STDOUT_FILENO) == -1) {
+            print_error("dup2", NULL, strerror(errno));
+            exit(EXIT_FAILURE);
+        }
         close(cmd->out_fd);
     }
 
-    if (is_builtin(cmd))
+    // Close all other file descriptors (except stdin, stdout, stderr)
+    for (int fd = 3; fd < 1024; fd++) {
+        close(fd);
+    }
+
+    if (is_builtin(cmd)) {
         exit(execute_builtin(cmd, &env, data));
+    }
 
     char *path = find_command_path(cmd->args[0], env);
     if (!path) {
@@ -200,6 +219,9 @@ int execute_command(t_cmd *cmd, t_env *env, t_data *data)
     if (!cmd->args[0])
         return 0;
 
+    if (cmd->next)
+        return handle_pipes(cmd, env, data);
+        
     if (is_builtin(cmd) && !cmd->next)
         return execute_builtin(cmd, &env, data);
 
@@ -208,39 +230,8 @@ int execute_command(t_cmd *cmd, t_env *env, t_data *data)
         return (print_error("fork", NULL, strerror(errno)), 1);
 
     if (pid == 0) {
-        // Apply input redirection first
-        if (cmd->in_fd != STDIN_FILENO) {
-            if (dup2(cmd->in_fd, STDIN_FILENO) == -1) {
-                print_error("dup2", NULL, strerror(errno));
-                exit(EXIT_FAILURE);
-            }
-            close(cmd->in_fd);
-        }
-
-        // Then apply output redirection
-        if (cmd->out_fd != STDOUT_FILENO) {
-            if (dup2(cmd->out_fd, STDOUT_FILENO) == -1) {
-                print_error("dup2", NULL, strerror(errno));
-                exit(EXIT_FAILURE);
-            }
-            close(cmd->out_fd);
-        }
-
-        if (is_builtin(cmd))
-            exit(execute_builtin(cmd, &env, data));
-
-        char *path = find_command_path(cmd->args[0], env);
-        if (!path) {
-            print_error(cmd->args[0], NULL, "command not found");
-            exit(127);
-        }
-
-        char **envp = env_to_array(env);
-        execve(path, cmd->args, envp);
-        print_error(path, NULL, strerror(errno));
-        free(path);
-        free_array(envp);
-        exit(126);
+        setup_child_signals();
+        execute_child(cmd, env, data);
     }
     else {
         // Close file descriptors in parent
@@ -252,6 +243,12 @@ int execute_command(t_cmd *cmd, t_env *env, t_data *data)
         waitpid(pid, &status, 0);
         if (WIFEXITED(status))
             data->exit_status = WEXITSTATUS(status);
+        else if (WIFSIGNALED(status))
+        {
+            if (WTERMSIG(status) == SIGQUIT)
+                ft_putstr_fd("Quit: 3\n", STDERR_FILENO);
+            data->exit_status = 128 + WTERMSIG(status);
+        }
     }
     return 0;
 }

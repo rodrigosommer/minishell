@@ -41,6 +41,7 @@ int handle_heredoc(char *delimiter)
     while (1) {
         line = readline("> ");
         if (!line) {
+            // This handles Ctrl+D
             ft_putstr_fd("minishell: warning: here-document delimited by end-of-file\n", STDERR_FILENO);
             break;
         }
@@ -48,7 +49,7 @@ int handle_heredoc(char *delimiter)
             free(line);
             break;
         }
-        write(fd[1], line, strlen(line));
+        write(fd[1], line, ft_strlen(line));
         write(fd[1], "\n", 1);
         free(line);
     }

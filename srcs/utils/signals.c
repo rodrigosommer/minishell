@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "../../includes/minishell.h"
+#include <termios.h>
 
 void	handle_sigint(int sig)
 {
@@ -25,6 +26,7 @@ void	handle_sigint(int sig)
 void	handle_sigquit(int sig)
 {
 	(void)sig;
+	ft_putstr_fd("Quit: 3\n", STDERR_FILENO);
 }
 
 void	setup_signals(void)
@@ -36,8 +38,43 @@ void	setup_signals(void)
 	sa_int.sa_flags = SA_RESTART;
 	sigemptyset(&sa_int.sa_mask);
 	sigaction(SIGINT, &sa_int, NULL);
-	sa_quit.sa_handler = SIG_IGN;
+	
+	sa_quit.sa_handler = SIG_IGN;  // Ignore in parent
 	sa_quit.sa_flags = SA_RESTART;
 	sigemptyset(&sa_quit.sa_mask);
 	sigaction(SIGQUIT, &sa_quit, NULL);
+}
+
+void	setup_child_signals(void)
+{
+	struct sigaction	sa_int;
+	struct sigaction	sa_quit;
+
+	sa_int.sa_handler = SIG_DFL;  // Default in child
+	sa_int.sa_flags = SA_RESTART;
+	sigemptyset(&sa_int.sa_mask);
+	sigaction(SIGINT, &sa_int, NULL);
+	
+	sa_quit.sa_handler = SIG_DFL;  // Default in child
+	sa_quit.sa_flags = SA_RESTART;
+	sigemptyset(&sa_quit.sa_mask);
+	sigaction(SIGQUIT, &sa_quit, NULL);
+}
+
+void setup_terminal(void)
+{
+    struct termios term;
+
+    tcgetattr(STDIN_FILENO, &term);
+    term.c_lflag &= ~(ECHOCTL);  // Don't print control chars like ^D
+    tcsetattr(STDIN_FILENO, TCSANOW, &term);
+}
+
+void restore_terminal(void)
+{
+    struct termios term;
+
+    tcgetattr(STDIN_FILENO, &term);
+    term.c_lflag |= ECHOCTL;  // Restore default behavior
+    tcsetattr(STDIN_FILENO, TCSANOW, &term);
 }

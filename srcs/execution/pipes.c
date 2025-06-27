@@ -21,36 +21,54 @@ int handle_pipes(t_cmd *cmd, t_env *env, t_data *data)
 {
     int fd[2];
     pid_t pid;
+    int status;
 
-    if (pipe(fd) == -1)
-        return (print_error("pipe", NULL, strerror(errno)), 1);
+    if (pipe(fd) == -1) {
+        print_error("pipe", NULL, strerror(errno));
+        return 1;
+    }
 
     pid = fork();
     if (pid == -1) {
         close(fd[0]);
         close(fd[1]);
-        return (print_error("fork", NULL, strerror(errno)), 1);
+        print_error("fork", NULL, strerror(errno));
+        return 1;
     }
 
-    if (pid == 0) {
-        close(fd[0]);
-        if (cmd->out_fd == STDOUT_FILENO)
-            cmd->out_fd = fd[1];
-        else {
-            dup2(fd[1], STDOUT_FILENO);
-            close(fd[1]);
+    if (pid == 0) {  // Child process (left side of pipe)
+        close(fd[0]);  // Close read end
+        setup_child_signals();  // Ensure proper signal handling in child
+        
+        if (dup2(fd[1], STDOUT_FILENO) == -1) {
+            print_error("dup2", NULL, strerror(errno));
+            exit(EXIT_FAILURE);
         }
-        execute_child(cmd, env, data);
-    }
-    else {
         close(fd[1]);
-        if (cmd->next->in_fd == STDIN_FILENO)
-            cmd->next->in_fd = fd[0];
-        else {
-            dup2(fd[0], STDIN_FILENO);
-            close(fd[0]);
-        }
-        execute_command(cmd->next, env, data);
+        
+        execute_child(cmd, env, data);
+        exit(EXIT_SUCCESS);
     }
-    return 0;
+    else {  // Parent process (right side of pipe)
+        close(fd[1]);  // Close write end
+        
+        if (dup2(fd[0], STDIN_FILENO) == -1) {
+            close(fd[0]);
+            print_error("dup2", NULL, strerror(errno));
+            return 1;
+        }
+        close(fd[0]);
+        
+        // Execute the next command in the pipe
+        int ret = execute_command(cmd->next, env, data);
+        
+        // Restore stdin
+        dup2(data->original_stdin, STDIN_FILENO);
+        
+        waitpid(pid, &status, 0);
+        if (WIFEXITED(status)) {
+            data->exit_status = WEXITSTATUS(status);
+        }
+        return ret;
+    }
 }

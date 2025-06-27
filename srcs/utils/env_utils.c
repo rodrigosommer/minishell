@@ -49,28 +49,33 @@ char	*get_env_value(t_env *env, char *key)
 	return (NULL);
 }
 
-void	set_env_value(t_env **env, char *key, char *value)
+void set_env_value(t_env **env, char *key, char *value)
 {
-	t_env	*current;
+    t_env *current = *env;
+    t_env *prev = NULL;
 
-	current = *env;
-	while (current)
-	{
-		if (!ft_strcmp(current->key, key))
-		{
-			free(current->value);
-			current->value = ft_strdup(value);
-			return ;
-		}
-		current = current->next;
-	}
-	current = malloc(sizeof(t_env));
-	if (!current)
-		return ;
-	current->key = ft_strdup(key);
-	current->value = ft_strdup(value);
-	current->next = *env;
-	*env = current;
+    while (current) {
+        if (!ft_strcmp(current->key, key)) {
+            free(current->value);
+            current->value = value ? ft_strdup(value) : NULL;
+            return;
+        }
+        prev = current;
+        current = current->next;
+    }
+
+    // If not found, create new entry
+    current = malloc(sizeof(t_env));
+    if (!current)
+        return;
+    current->key = ft_strdup(key);
+    current->value = value ? ft_strdup(value) : NULL;
+    current->next = NULL;
+
+    if (prev)
+        prev->next = current;
+    else
+        *env = current;
 }
 
 char	*ft_strjoin3(char const *s1, char const *s2, char const *s3)

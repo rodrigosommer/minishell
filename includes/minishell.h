@@ -60,6 +60,8 @@ typedef struct s_data
 	t_cmd	*cmd;
 	int		exit_status;
 	char	*input;
+	int     original_stdin;  // Add this
+        int     original_stdout; // Add this
 }	t_data;
 
 // Global variable for signals
@@ -92,6 +94,7 @@ int handle_pipes(t_cmd *cmd, t_env *env, t_data *data);
 t_cmd	*parse_input(char *input, t_env *env, t_data *data);
 char	**tokenize_input(char *input);
 char	*expand_variables(char *token, t_env *env, int exit_status);
+char *process_quotes_and_expand(char *token, t_env *env, int exit_status);
 
 // Utils
 int		handle_heredoc(char *delimiter);
@@ -110,5 +113,8 @@ void clean_readline(void);
 void	setup_signals(void);
 void	handle_sigint(int sig);
 void	handle_sigquit(int sig);
+void	setup_child_signals(void);
+void setup_terminal(void);
+void restore_terminal(void);
 
 #endif

@@ -23,6 +23,7 @@ SRCS = main.c \
        parsing/lexer.c \
        parsing/parser.c \
        parsing/expander.c \
+       parsing/quote_utils.c \
        execution/executor.c \
        execution/pipes.c \
        execution/redirections.c \

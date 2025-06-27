@@ -12,6 +12,19 @@
 
 #include "../../includes/minishell.h"
 
+static void process_token_quotes(char **token, t_env *env, t_data *data)
+{
+    char *processed = process_quotes_and_expand(*token, env, data->exit_status);
+    if (!processed) {
+        free(*token);
+        *token = NULL;
+        return;
+    }
+    
+    free(*token);
+    *token = processed;
+}
+
 static int	is_redirection_token(char *token)
 {
 	return (!ft_strcmp(token, "<") || !ft_strcmp(token, ">") 
@@ -156,13 +169,16 @@ t_cmd *parse_input(char *input, t_env *env, t_data *data)
             continue;
         }
 
-        // Only add non-redirection tokens to command args
         char *expanded = expand_variables(tokens[i], env, data->exit_status);
         if (!expanded) {
             free_array(tokens);
             free_commands(head);
             return NULL;
         }
+        
+        // Remove quotes after variable expansion
+        process_token_quotes(&expanded, env, data);
+        
         add_token_to_args(current, expanded);
         free(expanded);
         i++;
