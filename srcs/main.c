@@ -25,7 +25,7 @@ int main(int argc, char **argv, char **envp)
     setup_signals();
     run_shell(&data);
     cleanup_shell(&data);
-    restore_terminal();  // Add this line
+    reset_terminal();  // Add this line
     return (data.exit_status);
 }
 
@@ -41,27 +41,44 @@ void init_shell(t_data *data, char **envp)
 
 void run_shell(t_data *data)
 {
+    char *trimmed;
+    
     while (1)
     {
+        // Reset terminal state
+        struct termios term;
+        tcgetattr(STDIN_FILENO, &term);
+        term.c_lflag |= (ECHO | ECHONL | ICANON | ISIG);
+        tcsetattr(STDIN_FILENO, TCSANOW, &term);
+        
+        // Clear any pending input
+        rl_free_line_state();
+        rl_cleanup_after_signal();
+        
+        // Get input
         data->input = readline(PROMPT);
         if (!data->input)
         {
+            if (g_signal)
+            {
+                g_signal = 0;
+                continue;
+            }
             ft_putendl_fd("exit", STDERR_FILENO);
             break;
         }
-        
-        // Skip empty or whitespace-only input
-        char *trimmed = ft_strtrim(data->input, " \t\n\v\f\r");
+
+        // Process input
+        trimmed = ft_strtrim(data->input, " \t\n\v\f\r");
         if (!trimmed || !*trimmed)
         {
             free(data->input);
             free(trimmed);
-            data->input = NULL;
             continue;
         }
         free(trimmed);
-        
-        // Only process if we have real content
+
+        // Execute command
         add_history(data->input);
         data->cmd = parse_input(data->input, data->env, data);
         if (data->cmd)
@@ -70,6 +87,7 @@ void run_shell(t_data *data)
             free_commands(data->cmd);
             data->cmd = NULL;
         }
+        
         free(data->input);
         data->input = NULL;
     }
@@ -77,25 +95,44 @@ void run_shell(t_data *data)
 
 void cleanup_shell(t_data *data)
 {
-    if (data->input)
-    {
+    // Free input buffer if it exists
+    if (data->input) {
         free(data->input);
         data->input = NULL;
     }
-    if (data->cmd)
-    {
+
+    // Free command structures if they exist
+    if (data->cmd) {
         free_commands(data->cmd);
         data->cmd = NULL;
     }
-    if (data->env)
-    {
+
+    // Free environment variables if they exist
+    if (data->env) {
         free_env(data->env);
         data->env = NULL;
     }
+
+    // Clear command history
     rl_clear_history();
-    
-    // Add these lines to clean up readline/internal allocations
+
+    // Free readline internal state
     rl_free_line_state();
     rl_cleanup_after_signal();
     clean_readline();
+
+    // Restore original standard input/output if they were saved
+    if (data->original_stdin != -1) {
+        close(data->original_stdin);
+    }
+    if (data->original_stdout != -1) {
+        close(data->original_stdout);
+    }
+
+    // Restore terminal to original state
+    struct termios terminal_settings;
+    if (tcgetattr(STDIN_FILENO, &terminal_settings) == 0) {
+        terminal_settings.c_lflag |= ECHOCTL; // Ensure control characters are echoed
+        tcsetattr(STDIN_FILENO, TCSANOW, &terminal_settings);
+    }
 }

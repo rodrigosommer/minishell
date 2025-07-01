@@ -89,6 +89,7 @@ void        execute_child(t_cmd *cmd, t_env *env, t_data *data);
 int		execute_command(t_cmd *cmd, t_env *env, t_data *data);
 void handle_redirections(t_cmd *cmd);
 int handle_pipes(t_cmd *cmd, t_env *env, t_data *data);
+void reset_terminal(void);
 
 // Parsing
 t_cmd	*parse_input(char *input, t_env *env, t_data *data);

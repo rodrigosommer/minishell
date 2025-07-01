@@ -162,37 +162,25 @@ char **env_to_array(t_env *env)
 
 void execute_child(t_cmd *cmd, t_env *env, t_data *data)
 {
-    // Handle input redirection
+    // Set child signal handlers to default
+    signal(SIGINT, SIG_DFL);
+    signal(SIGQUIT, SIG_DFL);
+    
+    // Handle redirections
     if (cmd->in_fd != STDIN_FILENO) {
-        if (cmd->in_fd < 0) {
-            print_error("dup2", NULL, "Bad input file descriptor");
-            exit(EXIT_FAILURE);
-        }
-        if (dup2(cmd->in_fd, STDIN_FILENO) == -1) {
-            print_error("dup2", NULL, strerror(errno));
-            exit(EXIT_FAILURE);
-        }
+        dup2(cmd->in_fd, STDIN_FILENO);
         close(cmd->in_fd);
     }
-
-    // Handle output redirection
     if (cmd->out_fd != STDOUT_FILENO) {
-        if (cmd->out_fd < 0) {
-            print_error("dup2", NULL, "Bad output file descriptor");
-            exit(EXIT_FAILURE);
-        }
-        if (dup2(cmd->out_fd, STDOUT_FILENO) == -1) {
-            print_error("dup2", NULL, strerror(errno));
-            exit(EXIT_FAILURE);
-        }
+        dup2(cmd->out_fd, STDOUT_FILENO);
         close(cmd->out_fd);
     }
 
-    // Close all other file descriptors (except stdin, stdout, stderr)
-    for (int fd = 3; fd < 1024; fd++) {
+    // Close other file descriptors
+    for (int fd = 3; fd < 1024; fd++)
         close(fd);
-    }
 
+    // Execute command
     if (is_builtin(cmd)) {
         exit(execute_builtin(cmd, &env, data));
     }
@@ -205,6 +193,8 @@ void execute_child(t_cmd *cmd, t_env *env, t_data *data)
 
     char **envp = env_to_array(env);
     execve(path, cmd->args, envp);
+    
+    // Only reached if execve fails
     print_error(path, NULL, strerror(errno));
     free(path);
     free_array(envp);
