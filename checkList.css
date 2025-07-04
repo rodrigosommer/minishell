@@ -42,7 +42,7 @@
 [✅] Ctrl-D (empty prompt) → minishell exits
 [✅] Ctrl-C after typing → input cleared, new prompt
 [✅] Ctrl-D after typing → nothing happens
-[✅] Ctrl-C during `cat` → stops the command and shows prompt again
+[❌] Ctrl-C during `cat` → stops the command and shows prompt again
 [✅] Ctrl-\ during `cat` → command exits with "Quit: 3"
 [✅] Ctrl-D during `cat` → sends EOF, command finishes
 
