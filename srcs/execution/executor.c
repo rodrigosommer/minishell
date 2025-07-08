@@ -163,8 +163,7 @@ char **env_to_array(t_env *env)
 void execute_child(t_cmd *cmd, t_env *env, t_data *data)
 {
     // Set child signal handlers to default
-    signal(SIGINT, SIG_DFL);
-    signal(SIGQUIT, SIG_DFL);
+    setup_child_signals();
     
     // Handle redirections
     if (cmd->in_fd != STDIN_FILENO) {
@@ -209,15 +208,25 @@ int execute_command(t_cmd *cmd, t_env *env, t_data *data)
     if (!cmd->args[0])
         return 0;
 
-    if (cmd->next)
-        return handle_pipes(cmd, env, data);
+    g_command_executing = 1;
+
+    if (cmd->next) {
+        int ret = handle_pipes(cmd, env, data);
+        g_command_executing = 0;
+        return ret;
+    }
         
-    if (is_builtin(cmd) && !cmd->next)
-        return execute_builtin(cmd, &env, data);
+    if (is_builtin(cmd) && !cmd->next) {
+        int ret = execute_builtin(cmd, &env, data);
+        g_command_executing = 0;
+        return ret;
+    }
 
     pid = fork();
-    if (pid == -1)
+    if (pid == -1) {
+        g_command_executing = 0;
         return (print_error("fork", NULL, strerror(errno)), 1);
+    }
 
     if (pid == 0) {
         setup_child_signals();
@@ -231,14 +240,19 @@ int execute_command(t_cmd *cmd, t_env *env, t_data *data)
             close(cmd->out_fd);
 
         waitpid(pid, &status, 0);
-        if (WIFEXITED(status))
+        if (WIFEXITED(status)) {
             data->exit_status = WEXITSTATUS(status);
-        else if (WIFSIGNALED(status))
-        {
-            if (WTERMSIG(status) == SIGQUIT)
-                ft_putstr_fd("Quit: 3\n", STDERR_FILENO);
-            data->exit_status = 128 + WTERMSIG(status);
         }
+        else if (WIFSIGNALED(status)) {
+    if (WTERMSIG(status) == SIGINT) {
+        write(STDOUT_FILENO, "\n", 1);
+    }
+    else if (WTERMSIG(status) == SIGQUIT) {
+        ft_putstr_fd("Quit: 3\n", STDERR_FILENO);
+    }
+    data->exit_status = 128 + WTERMSIG(status);
+        }
+        g_command_executing = 0;
     }
     return 0;
 }

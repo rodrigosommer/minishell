@@ -13,10 +13,12 @@
 #include "../includes/minishell.h"
 
 volatile sig_atomic_t	g_signal = 0;
+t_data *g_shell_data = NULL;
 
 int main(int argc, char **argv, char **envp)
 {
     t_data data;
+    g_shell_data = &data;  // Set global pointer
 
     (void)argc;
     (void)argv;
@@ -45,30 +47,18 @@ void run_shell(t_data *data)
     
     while (1)
     {
-        // Reset terminal state
-        struct termios term;
-        tcgetattr(STDIN_FILENO, &term);
-        term.c_lflag |= (ECHO | ECHONL | ICANON | ISIG);
-        tcsetattr(STDIN_FILENO, TCSANOW, &term);
-        
-        // Clear any pending input
-        rl_free_line_state();
-        rl_cleanup_after_signal();
+        // Reset signal flag
+        g_signal = 0;
         
         // Get input
         data->input = readline(PROMPT);
         if (!data->input)
         {
-            if (g_signal)
-            {
-                g_signal = 0;
-                continue;
-            }
             ft_putendl_fd("exit", STDERR_FILENO);
             break;
         }
 
-        // Process input
+        // Skip empty lines
         trimmed = ft_strtrim(data->input, " \t\n\v\f\r");
         if (!trimmed || !*trimmed)
         {
@@ -78,8 +68,11 @@ void run_shell(t_data *data)
         }
         free(trimmed);
 
-        // Execute command
-        add_history(data->input);
+        // Add to history if not empty
+        if (data->input[0] != '\0')
+            add_history(data->input);
+
+        // Parse and execute
         data->cmd = parse_input(data->input, data->env, data);
         if (data->cmd)
         {

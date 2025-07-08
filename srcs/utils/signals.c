@@ -13,64 +13,51 @@
 #include "../../includes/minishell.h"
 #include <termios.h>
 
+volatile sig_atomic_t g_command_executing = 0;
+
+int is_executing_command(void)
+{
+    return g_command_executing;
+}
+
 void handle_sigint(int sig)
 {
     (void)sig;
     g_signal = 1;
     
-    // Reset the readline state
-    rl_replace_line("", 0);
-    rl_done = 1;
-    
-    // Write newline and flush output
-    write(STDOUT_FILENO, "\n", 1);
-    
-    // Reset terminal attributes
-    struct termios term;
-    tcgetattr(STDIN_FILENO, &term);
-    term.c_lflag |= (ECHO | ECHONL | ICANON | ISIG);
-    tcsetattr(STDIN_FILENO, TCSANOW, &term);
+    // Only handle display if we're at the prompt
+    if (!g_command_executing) {
+        write(STDOUT_FILENO, "\n", 1);
+        rl_replace_line("", 0);
+        rl_on_new_line();
+        rl_redisplay();
+    }
 }
 
-void	handle_sigquit(int sig)
+void handle_sigquit(int sig)
 {
-	(void)sig;
-	ft_putstr_fd("Quit: 3\n", STDERR_FILENO);
+    (void)sig;
+    // Let the child process handle the display
 }
 
 void setup_signals(void)
 {
     struct sigaction sa;
 
+    // Parent process signals
     sa.sa_handler = handle_sigint;
     sigemptyset(&sa.sa_mask);
     sa.sa_flags = SA_RESTART;
     sigaction(SIGINT, &sa, NULL);
 
-    sa.sa_handler = SIG_IGN;
+    sa.sa_handler = SIG_IGN;  // Parent ignores SIGQUIT
     sigaction(SIGQUIT, &sa, NULL);
 }
 
 void setup_child_signals(void)
 {
-    struct sigaction sa_int;
-    struct sigaction sa_quit;
-
-    // Reset terminal attributes before changing signal handlers
-    struct termios term;
-    tcgetattr(STDIN_FILENO, &term);
-    term.c_lflag |= ECHOCTL;
-    tcsetattr(STDIN_FILENO, TCSANOW, &term);
-
-    sa_int.sa_handler = SIG_DFL;
-    sa_int.sa_flags = SA_RESTART;
-    sigemptyset(&sa_int.sa_mask);
-    sigaction(SIGINT, &sa_int, NULL);
-    
-    sa_quit.sa_handler = SIG_DFL;
-    sa_quit.sa_flags = SA_RESTART;
-    sigemptyset(&sa_quit.sa_mask);
-    sigaction(SIGQUIT, &sa_quit, NULL);
+    signal(SIGINT, SIG_DFL);
+    signal(SIGQUIT, SIG_DFL);  // Child gets default SIGQUIT handler
 }
 
 void setup_terminal(void)

@@ -37,7 +37,9 @@ typedef struct s_data t_data;
 # define PROMPT "minishell> "
 # define SYNTAX_ERROR_MSG "syntax error near unexpected token"
 
+extern t_data *g_shell_data;
 extern int	g_exit_status;
+extern volatile sig_atomic_t g_command_executing;
 
 typedef struct s_env
 {
@@ -56,13 +58,14 @@ typedef struct s_cmd
 
 typedef struct s_data
 {
-	t_env	*env;
-	t_cmd	*cmd;
-	int		exit_status;
-	char	*input;
-	int     original_stdin;  // Add this
-        int     original_stdout; // Add this
-}	t_data;
+    t_env   *env;
+    t_cmd   *cmd;
+    int     exit_status;
+    char    *input;
+    int     original_stdin;
+    int     original_stdout;
+    int     executing_command;  // Flag for command execution state
+}   t_data;
 
 // Global variable for signals
 extern volatile sig_atomic_t	g_signal;
@@ -117,5 +120,6 @@ void	handle_sigquit(int sig);
 void	setup_child_signals(void);
 void setup_terminal(void);
 void restore_terminal(void);
+int is_executing_command(void);
 
 #endif
