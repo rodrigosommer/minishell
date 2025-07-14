@@ -47,36 +47,36 @@ void run_shell(t_data *data)
     
     while (1)
     {
-        // Reset signal flag
         g_signal = 0;
-        
-        // Get input
         data->input = readline(PROMPT);
+        debug_log("run_shell", "Input received", data->input);
         if (!data->input)
         {
             ft_putendl_fd("exit", STDERR_FILENO);
+            debug_log("run_shell", "EOF received, exiting", NULL);
             break;
         }
 
-        // Skip empty lines
         trimmed = ft_strtrim(data->input, " \t\n\v\f\r");
         if (!trimmed || !*trimmed)
         {
+            debug_log("run_shell", "Empty input, skipping", NULL);
             free(data->input);
             free(trimmed);
             continue;
         }
         free(trimmed);
 
-        // Add to history if not empty
         if (data->input[0] != '\0')
             add_history(data->input);
 
-        // Parse and execute
         data->cmd = parse_input(data->input, data->env, data);
+        debug_log("run_shell", "Command parsed", data->cmd ? "Valid" : "NULL");
         if (data->cmd)
         {
-            execute_command(data->cmd, data->env, data);
+            int ret = execute_command(data->cmd, data->env, data);
+            debug_log("run_shell", "Command executed, status", ft_itoa(ret));
+            data->exit_status = ret;
             free_commands(data->cmd);
             data->cmd = NULL;
         }

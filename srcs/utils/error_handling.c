@@ -10,37 +10,59 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+// error_handling.c
 #include "../../includes/minishell.h"
+#include <fcntl.h>
 
-void	print_error(char *cmd, char *arg, char *error)
+void debug_log(const char *function, const char *message, const char *value)
 {
-	ft_putstr_fd("minishell: ", STDERR_FILENO);
-	if (cmd)
-	{
-		ft_putstr_fd(cmd, STDERR_FILENO);
-		ft_putstr_fd(": ", STDERR_FILENO);
-	}
-	if (arg)
-	{
-		ft_putstr_fd(arg, STDERR_FILENO);
-		ft_putstr_fd(": ", STDERR_FILENO);
-	}
-	ft_putendl_fd(error, STDERR_FILENO);
+    int fd = open("minishell_debug.log", O_WRONLY | O_CREAT | O_APPEND, 0644);
+    if (fd == -1)
+        return;
+    ft_putstr_fd("[DEBUG] ", fd);
+    ft_putstr_fd((char *)function, fd); // Cast to char * to match ft_putstr_fd
+    ft_putstr_fd(": ", fd);
+    ft_putstr_fd((char *)message, fd); // Cast to char *
+    if (value) {
+        ft_putstr_fd(": ", fd);
+        ft_putstr_fd((char *)value, fd); // Cast to char *
+    }
+    ft_putstr_fd("\n", fd);
+    close(fd);
 }
 
-int	is_valid_env_key(char *key)
+void print_error(char *cmd, char *arg, char *error)
 {
-	int	i;
+    ft_putstr_fd("minishell: ", STDERR_FILENO);
+    if (cmd) {
+        ft_putstr_fd(cmd, STDERR_FILENO);
+        ft_putstr_fd(": ", STDERR_FILENO);
+    }
+    if (arg) {
+        ft_putstr_fd(arg, STDERR_FILENO);
+        ft_putstr_fd(": ", STDERR_FILENO);
+    }
+    ft_putstr_fd(error, STDERR_FILENO);
+    ft_putstr_fd("\n", STDERR_FILENO);
+    debug_log("print_error", "Error reported", error);
+}
 
-	i = 0;
-	if (!ft_isalpha(key[i]) && key[i] != '_')
-		return (0);
-	i++;
-	while (key[i] && key[i] != '=')
-	{
-		if (!ft_isalnum(key[i]) && key[i] != '_')
-			return (0);
-		i++;
-	}
-	return (1);
+int is_valid_env_key(char *key)
+{
+    int i = 0;
+    
+    if (!key || !*key)
+        return 0;
+        
+    // First character must be letter or underscore
+    if (!ft_isalpha(key[0]) && key[0] != '_')
+        return 0;
+        
+    // Subsequent characters can be alphanumeric or underscore
+    while (key[i] && key[i] != '=') {
+        if (!ft_isalnum(key[i]) && key[i] != '_')
+            return 0;
+        i++;
+    }
+    return 1;
 }

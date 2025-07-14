@@ -80,7 +80,7 @@ char *expand_variables(char *token, t_env *env, int exit_status)
         if (!in_squote && !escaped && result[i] == '$') {
             if (result[i+1] == '?') {
                 char *exit_str = ft_itoa(exit_status);
-                char *new = ft_strreplace(result + i, "$?", exit_str);
+                char *new = ft_strreplace(result, "$?", exit_str);
                 free(exit_str);
                 free(result);
                 result = new ? new : ft_strdup("");

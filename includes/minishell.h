@@ -85,6 +85,7 @@ int		builtin_env(t_env *env);
 int		builtin_exit(t_cmd *cmd, t_data *data);
 
 // Execution
+int is_valid_env_key(char *key);
 int is_builtin(t_cmd *cmd);
 int execute_builtin(t_cmd *cmd, t_env **env, t_data *data);
 char **env_to_array(t_env *env);
@@ -101,6 +102,7 @@ char	*expand_variables(char *token, t_env *env, int exit_status);
 char *process_quotes_and_expand(char *token, t_env *env, int exit_status);
 
 // Utils
+void debug_log(const char *function, const char *message, const char *value);
 int		handle_heredoc(char *delimiter);
 t_env	*init_env(char **envp);
 char	*get_env_value(t_env *env, char *key);
@@ -110,7 +112,6 @@ void	print_error(char *cmd, char *arg, char *error);
 void	free_array(char **array);
 void	free_commands(t_cmd *cmd);
 void	free_env(t_env *env);
-int	is_valid_env_key(char *key);
 void clean_readline(void);
 
 // Signals
