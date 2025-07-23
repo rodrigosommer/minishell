@@ -113,6 +113,7 @@ void	free_array(char **array);
 void	free_commands(t_cmd *cmd);
 void	free_env(t_env *env);
 void clean_readline(void);
+char *ft_strreplace(char *str, char *old_str, char *new_str);
 
 // Signals
 void	setup_signals(void);

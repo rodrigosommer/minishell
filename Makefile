@@ -36,6 +36,7 @@ SRCS = main.c \
        execution/builtins/builtin_unset.c \
        utils/error_handling.c \
        utils/env_utils.c \
+       utils/utils.c \
        utils/free_utils.c \
        utils/readline_utils.c \
        utils/signals.c \

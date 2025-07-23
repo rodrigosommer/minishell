@@ -12,84 +12,258 @@
 
 #include "../../includes/minishell.h"
 
-// Forward declarations for static functions from executor.c
-int is_builtin(t_cmd *cmd);
-int execute_builtin(t_cmd *cmd, t_env **env, t_data *data);
-char **env_to_array(t_env *env);
+static void close_pipes(int **pipes, int num_pipes)
+{
+    int i;
+    
+    if (!pipes)
+        return;
+    
+    i = 0;
+    while (i < num_pipes)
+    {
+        if (pipes[i])
+        {
+            if (pipes[i][0] != -1)
+                close(pipes[i][0]);
+            if (pipes[i][1] != -1)
+                close(pipes[i][1]);
+            free(pipes[i]);
+        }
+        i++;
+    }
+    free(pipes);
+}
+
+static int **create_pipes(int num_pipes)
+{
+    int **pipes;
+    int i;
+
+    if (num_pipes <= 0)
+        return NULL;
+
+    pipes = malloc(sizeof(int *) * num_pipes);
+    if (!pipes)
+        return NULL;
+
+    i = 0;
+    while (i < num_pipes)
+    {
+        pipes[i] = malloc(sizeof(int) * 2);
+        if (!pipes[i])
+        {
+            close_pipes(pipes, i);
+            return NULL;
+        }
+        if (pipe(pipes[i]) == -1)
+        {
+            free(pipes[i]);
+            close_pipes(pipes, i);
+            print_error("pipe", NULL, strerror(errno));
+            return NULL;
+        }
+        i++;
+    }
+    return pipes;
+}
+
+static int count_commands(t_cmd *cmd)
+{
+    int count = 0;
+    while (cmd)
+    {
+        count++;
+        cmd = cmd->next;
+    }
+    return count;
+}
+
+static void setup_child_pipes(int **pipes, int cmd_index, int num_commands)
+{
+    int i;
+
+    // Set up input: read from previous pipe if not first command
+    if (cmd_index > 0)
+    {
+        if (dup2(pipes[cmd_index - 1][0], STDIN_FILENO) == -1)
+        {
+            print_error("dup2", NULL, strerror(errno));
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    // Set up output: write to next pipe if not last command  
+    if (cmd_index < num_commands - 1)
+    {
+        if (dup2(pipes[cmd_index][1], STDOUT_FILENO) == -1)
+        {
+            print_error("dup2", NULL, strerror(errno));
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    // Close all pipe file descriptors in child
+    i = 0;
+    while (i < num_commands - 1)
+    {
+        close(pipes[i][0]);
+        close(pipes[i][1]);
+        i++;
+    }
+}
 
 int handle_pipes(t_cmd *cmd, t_env *env, t_data *data)
 {
-    int fd[2];
-    pid_t pid;
-    int status;
-    int ret = 0;
+    int num_commands = count_commands(cmd);
+    int **pipes;
+    pid_t *pids;
+    t_cmd *current = cmd;
+    int i = 0;
+    int final_status = 0;
 
-    debug_log("handle_pipes", "Creating pipe for command", cmd->args ? cmd->args[0] : "NULL");
-    if (pipe(fd) == -1) {
-        print_error("pipe", NULL, strerror(errno));
-        debug_log("handle_pipes", "Pipe creation failed", strerror(errno));
+    debug_log("handle_pipes", "Starting pipeline", ft_itoa(num_commands));
+
+    if (num_commands < 2)
+        return execute_command(cmd, env, data);
+
+    // Create pipes
+    pipes = create_pipes(num_commands - 1);
+    if (!pipes)
+    {
         data->exit_status = 1;
         return 1;
     }
 
-    pid = fork();
-    if (pid == -1) {
-        close(fd[0]);
-        close(fd[1]);
-        print_error("fork", NULL, strerror(errno));
-        debug_log("handle_pipes", "Fork failed", NULL);
+    // Create array to store child PIDs
+    pids = malloc(sizeof(pid_t) * num_commands);
+    if (!pids)
+    {
+        close_pipes(pipes, num_commands - 1);
         data->exit_status = 1;
         return 1;
     }
 
-    if (pid == 0) {  // Child process (left side of pipe)
-        debug_log("handle_pipes", "In child process", cmd->args ? cmd->args[0] : "NULL");
-        close(fd[0]);
-        setup_child_signals();
+    // Fork all processes
+    while (current && i < num_commands)
+    {
+        pids[i] = fork();
         
-        handle_redirections(cmd);
-        debug_log("handle_pipes", "Applied redirections in child", NULL);
-        
-        if (dup2(fd[1], STDOUT_FILENO) == -1) {
-            print_error("dup2", NULL, strerror(errno));
-            debug_log("handle_pipes", "dup2 failed in child", strerror(errno));
-            exit(EXIT_FAILURE);
-        }
-        close(fd[1]);
-        
-        execute_child(cmd, env, data);
-        exit(EXIT_SUCCESS);
-    }
-    else {  // Parent process (right side of pipe)
-        debug_log("handle_pipes", "In parent process", cmd->next->args ? cmd->next->args[0] : "NULL");
-        close(fd[1]);
-        
-        if (dup2(fd[0], STDIN_FILENO) == -1) {
-            close(fd[0]);
-            print_error("dup2", NULL, strerror(errno));
-            debug_log("handle_pipes", "dup2 failed in parent", strerror(errno));
+        if (pids[i] == -1)
+        {
+            print_error("fork", NULL, strerror(errno));
+            // Kill already forked children
+            for (int j = 0; j < i; j++)
+                kill(pids[j], SIGTERM);
+            // Wait for them to die
+            for (int j = 0; j < i; j++)
+                waitpid(pids[j], NULL, 0);
+            close_pipes(pipes, num_commands - 1);
+            free(pids);
             data->exit_status = 1;
             return 1;
         }
-        close(fd[0]);
         
-        handle_redirections(cmd->next);
-        debug_log("handle_pipes", "Applied redirections in parent", NULL);
-        
-        ret = execute_command(cmd->next, env, data);
-        debug_log("handle_pipes", "Right side exit status", ft_itoa(ret));
-        
-        dup2(data->original_stdin, STDIN_FILENO);
-        
-        waitpid(pid, &status, 0);
-        if (WIFEXITED(status)) {
-            data->exit_status = WEXITSTATUS(status);
-            debug_log("handle_pipes", "Child exit status", ft_itoa(data->exit_status));
+        if (pids[i] == 0)
+        {
+            // Child process
+            setup_child_signals();
+            
+            // Set up pipes first
+            setup_child_pipes(pipes, i, num_commands);
+            
+            // Then handle explicit redirections (they override pipes)
+            // Check for redirection failures - if any fail, exit with status 1
+            // but don't prevent other commands in pipeline from running
+            if (current->in_fd != STDIN_FILENO && current->in_fd != -1)
+            {
+                if (dup2(current->in_fd, STDIN_FILENO) == -1)
+                {
+                    print_error("dup2", NULL, strerror(errno));
+                    exit(EXIT_FAILURE);
+                }
+                close(current->in_fd);
+            }
+            else if (current->in_fd == -1)
+            {
+                // Input redirection failed during parsing
+                // Exit this command but don't stop the pipeline
+                exit(1);
+            }
+            
+            if (current->out_fd != STDOUT_FILENO && current->out_fd != -1)
+            {
+                if (dup2(current->out_fd, STDOUT_FILENO) == -1)
+                {
+                    print_error("dup2", NULL, strerror(errno));
+                    exit(EXIT_FAILURE);
+                }
+                close(current->out_fd);
+            }
+            else if (current->out_fd == -1)
+            {
+                // Output redirection failed during parsing
+                // Exit this command but don't stop the pipeline  
+                exit(1);
+            }
+
+            // Close extra file descriptors
+            for (int fd = 3; fd < 1024; fd++)
+                close(fd);
+
+            // Execute command
+            execute_child(current, env, data);
+            exit(127);
         }
-        else if (WIFSIGNALED(status)) {
-            data->exit_status = 128 + WTERMSIG(status);
-            debug_log("handle_pipes", "Child signaled", ft_itoa(data->exit_status));
-        }
-        return ret;
+
+        current = current->next;
+        i++;
     }
+
+    // Parent: close all pipe file descriptors
+    close_pipes(pipes, num_commands - 1);
+
+    // Wait for all children and collect exit statuses
+    i = 0;
+    while (i < num_commands)
+    {
+        int status;
+        waitpid(pids[i], &status, 0);
+        
+        // The exit status of a pipeline is the exit status of the last command
+        if (i == num_commands - 1)
+        {
+            if (WIFEXITED(status))
+            {
+                final_status = WEXITSTATUS(status);
+            }
+            else if (WIFSIGNALED(status))
+            {
+                int sig = WTERMSIG(status);
+                if (sig == SIGINT)
+                    write(STDOUT_FILENO, "\n", 1);
+                else if (sig == SIGQUIT)
+                    ft_putstr_fd("Quit: 3\n", STDERR_FILENO);
+                final_status = 128 + sig;
+            }
+        }
+        else
+        {
+            // For non-last commands, just handle signal display
+            if (WIFSIGNALED(status))
+            {
+                int sig = WTERMSIG(status);
+                if (sig == SIGINT && i == 0) // Only first command shows signal
+                    write(STDOUT_FILENO, "\n", 1);
+                else if (sig == SIGQUIT && i == 0)
+                    ft_putstr_fd("Quit: 3\n", STDERR_FILENO);
+            }
+        }
+        i++;
+    }
+
+    free(pids);
+    data->exit_status = final_status;
+    debug_log("handle_pipes", "Pipeline completed", ft_itoa(final_status));
+    return final_status;
 }

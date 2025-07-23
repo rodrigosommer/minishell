@@ -52,7 +52,7 @@ void run_shell(t_data *data)
         debug_log("run_shell", "Input received", data->input);
         if (!data->input)
         {
-            ft_putendl_fd("exit", STDERR_FILENO);
+            // Don't print "exit" on EOF (Ctrl+D) - bash behavior
             debug_log("run_shell", "EOF received, exiting", NULL);
             break;
         }

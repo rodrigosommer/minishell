@@ -13,24 +13,6 @@
 #include "../../includes/minishell.h"
 #include <stdbool.h>
 
-// Forward declaration for expand_env_var
-static char *expand_env_var(char *str, int *i, t_env *env);
-
-typedef enum {
-    NO_QUOTE,
-    SINGLE_QUOTE,
-    DOUBLE_QUOTE
-} t_quote_state;
-
-static t_quote_state get_quote_state(char c, t_quote_state current)
-{
-    if (c == '\'' && current != DOUBLE_QUOTE)
-        return current == SINGLE_QUOTE ? NO_QUOTE : SINGLE_QUOTE;
-    if (c == '\"' && current != SINGLE_QUOTE)
-        return current == DOUBLE_QUOTE ? NO_QUOTE : DOUBLE_QUOTE;
-    return current;
-}
-
 static char *expand_env_var(char *str, int *i, t_env *env)
 {
     int start = ++(*i); // Skip the $
@@ -61,7 +43,7 @@ static char *expand_env_var(char *str, int *i, t_env *env)
         result = tmp;
     }
     
-    (*i) = start - 1; // Position after replacement
+    (*i) = start - 1 + ft_strlen(var_value); // Position after replacement
     return result;
 }
 
@@ -69,71 +51,101 @@ char *process_quotes_and_expand(char *token, t_env *env, int exit_status)
 {
     if (!token) return NULL;
     
-    t_quote_state state = NO_QUOTE;
-    bool in_escape = false;
     char *result = ft_strdup(token);
-    
     if (!result) return NULL;
 
     // First pass: expand variables (not in single quotes)
-    for (int i = 0; result[i]; i++) {
-        if (!in_escape && result[i] == '\\') {
-            in_escape = true;
+    int i = 0;
+    bool in_single_quote = false;
+    bool in_double_quote = false;
+    bool escaped = false;
+    
+    while (result[i]) {
+        if (!escaped && result[i] == '\\') {
+            escaped = true;
+            i++;
             continue;
         }
 
-        state = get_quote_state(result[i], state);
+        if (!escaped) {
+            if (result[i] == '\'' && !in_double_quote) {
+                in_single_quote = !in_single_quote;
+            } else if (result[i] == '\"' && !in_single_quote) {
+                in_double_quote = !in_double_quote;
+            }
+        }
         
-        if (!in_escape && state != SINGLE_QUOTE && result[i] == '$') {
+        if (!escaped && !in_single_quote && result[i] == '$') {
             char *expanded = NULL;
             if (result[i+1] == '?') {
                 char *exit_str = ft_itoa(exit_status);
-                expanded = ft_strreplace(result + i, "$?", exit_str);
+                char *new_result = ft_calloc(ft_strlen(result) + ft_strlen(exit_str), sizeof(char));
+                if (new_result) {
+                    ft_strlcpy(new_result, result, i + 1);
+                    ft_strlcat(new_result, exit_str, ft_strlen(result) + ft_strlen(exit_str));
+                    ft_strlcat(new_result, result + i + 2, ft_strlen(result) + ft_strlen(exit_str));
+                    free(result);
+                    result = new_result;
+                    i += ft_strlen(exit_str) - 1;
+                }
                 free(exit_str);
-                i = 0; // Reset after replacement
             } else if (ft_isalpha(result[i+1]) || result[i+1] == '_') {
                 int j = i;
                 expanded = expand_env_var(result, &j, env);
-                i = 0; // Reset after expansion
-            }
-            
-            if (expanded) {
-                free(result);
-                result = expanded;
-                if (!result) return NULL;
+                if (expanded) {
+                    free(result);
+                    result = expanded;
+                    i = j; // Continue from where expansion left off
+                    in_single_quote = false;
+                    in_double_quote = false;
+                    escaped = false;
+                    continue;
+                }
             }
         }
-        in_escape = false;
+        escaped = false;
+        i++;
     }
 
-    // Second pass: remove syntactic quotes but preserve those that are part of the content
+    // Second pass: remove quotes
     char *final = ft_calloc(ft_strlen(result) + 1, sizeof(char));
+    if (!final) {
+        free(result);
+        return NULL;
+    }
+    
     int j = 0;
-    state = NO_QUOTE;
-    in_escape = false;
+    i = 0;
+    in_single_quote = false;
+    in_double_quote = false;
+    escaped = false;
 
-    for (int i = 0; result[i]; i++) {
-        if (!in_escape && result[i] == '\\') {
-            in_escape = true;
-            final[j++] = result[i];
+    while (result[i]) {
+        if (!escaped && result[i] == '\\') {
+            escaped = true;
+            if (in_single_quote) {
+                final[j++] = result[i]; // Keep backslashes in single quotes
+            }
+            i++;
             continue;
         }
 
-        t_quote_state new_state = get_quote_state(result[i], state);
-        if (new_state != state) {
-            // Quote state changed - only remove if it's a syntactic quote
-            if (state == NO_QUOTE) {
-                // Opening quote - don't copy it if it's syntactic
-                state = new_state;
-            } else {
-                // Closing quote - don't copy it if it's syntactic
-                state = NO_QUOTE;
+        if (!escaped) {
+            if (result[i] == '\'' && !in_double_quote) {
+                in_single_quote = !in_single_quote;
+                i++; // Skip the quote character
+                continue;
+            } else if (result[i] == '\"' && !in_single_quote) {
+                in_double_quote = !in_double_quote;
+                i++; // Skip the quote character
+                continue;
             }
-        } else {
-            // Regular character or quote within quotes
-            final[j++] = result[i];
         }
-        in_escape = false;
+
+        // Copy the character
+        final[j++] = result[i];
+        escaped = false;
+        i++;
     }
 
     free(result);

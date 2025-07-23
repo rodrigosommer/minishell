@@ -1,0 +1,192 @@
+[DEBUG] run_shell: Input received: cd srcs/
+[DEBUG] parse_input: Input: cd srcs/
+[DEBUG] parse_input: Processing token: cd
+[DEBUG] parse_input: Expanded token: cd
+[DEBUG] parse_input: Processed quotes: cd
+[DEBUG] parse_input: Processing token: srcs/
+[DEBUG] parse_input: Expanded token: srcs/
+[DEBUG] parse_input: Processed quotes: srcs/
+[DEBUG] parse_input: Parsing completed
+[DEBUG] run_shell: Command parsed: Valid
+[DEBUG] execute_command: Executing command: cd
+[DEBUG] run_shell: Input received: cat
+[DEBUG] parse_input: Input: cat
+[DEBUG] parse_input: Processing token: cat
+[DEBUG] parse_input: Expanded token: cat
+[DEBUG] parse_input: Processed quotes: cat
+[DEBUG] parse_input: Parsing completed
+[DEBUG] run_shell: Command parsed: Valid
+[DEBUG] execute_command: Executing command: cat
+[DEBUG] execute_child: Executing command: cat
+[DEBUG] execute_child: Redirections handled by caller
+[DEBUG] find_command_path: Checking command: cat
+[DEBUG] find_command_path: Found executable: /usr/bin/cat
+[DEBUG] execute_child: Executing external command: /usr/bin/cat
+[DEBUG] execute_command: Child signaled, status: 130
+[DEBUG] run_shell: Command executed, status: 130
+[DEBUG] run_shell: Input received: echo hi
+[DEBUG] parse_input: Input: echo hi
+[DEBUG] parse_input: Processing token: echo
+[DEBUG] parse_input: Expanded token: echo
+[DEBUG] parse_input: Processed quotes: echo
+[DEBUG] parse_input: Processing token: hi
+[DEBUG] parse_input: Expanded token: hi
+[DEBUG] parse_input: Processed quotes: hi
+[DEBUG] parse_input: Parsing completed
+[DEBUG] run_shell: Command parsed: Valid
+[DEBUG] execute_command: Executing command: echo
+[DEBUG] execute_command: Built-in completed, status: 0
+[DEBUG] run_shell: Command executed, status: 0
+[DEBUG] run_shell: Input received: true && echo YES
+[DEBUG] parse_input: Input: true && echo YES
+[DEBUG] parse_input: Processing token: true
+[DEBUG] parse_input: Expanded token: true
+[DEBUG] parse_input: Processed quotes: true
+[DEBUG] parse_input: Processing token: &&
+[DEBUG] parse_input: Expanded token: &&
+[DEBUG] parse_input: Processed quotes: &&
+[DEBUG] parse_input: Processing token: echo
+[DEBUG] parse_input: Expanded token: echo
+[DEBUG] parse_input: Processed quotes: echo
+[DEBUG] parse_input: Processing token: YES
+[DEBUG] parse_input: Expanded token: YES
+[DEBUG] parse_input: Processed quotes: YES
+[DEBUG] parse_input: Parsing completed
+[DEBUG] run_shell: Command parsed: Valid
+[DEBUG] execute_command: Executing command: true
+[DEBUG] execute_child: Executing command: true
+[DEBUG] execute_child: Redirections handled by caller
+[DEBUG] find_command_path: Checking command: true
+[DEBUG] find_command_path: Found executable: /usr/bin/true
+[DEBUG] execute_child: Executing external command: /usr/bin/true
+[DEBUG] execute_command: Child exited with status: 0
+[DEBUG] run_shell: Command executed, status: 0
+[DEBUG] run_shell: Input received: echo *./c
+[DEBUG] parse_input: Input: echo *./c
+[DEBUG] parse_input: Processing token: echo
+[DEBUG] parse_input: Expanded token: echo
+[DEBUG] parse_input: Processed quotes: echo
+[DEBUG] parse_input: Processing token: *./c
+[DEBUG] parse_input: Expanded token: *./c
+[DEBUG] parse_input: Processed quotes: *./c
+[DEBUG] parse_input: Parsing completed
+[DEBUG] run_shell: Command parsed: Valid
+[DEBUG] execute_command: Executing command: echo
+[DEBUG] execute_command: Built-in completed, status: 0
+[DEBUG] run_shell: Command executed, status: 0
+[DEBUG] run_shell: Input received: echo *./c
+[DEBUG] parse_input: Input: echo *./c
+[DEBUG] parse_input: Processing token: echo
+[DEBUG] parse_input: Expanded token: echo
+[DEBUG] parse_input: Processed quotes: echo
+[DEBUG] parse_input: Processing token: *./c
+[DEBUG] parse_input: Expanded token: *./c
+[DEBUG] parse_input: Processed quotes: *./c
+[DEBUG] parse_input: Parsing completed
+[DEBUG] run_shell: Command parsed: Valid
+[DEBUG] execute_command: Executing command: echo
+[DEBUG] execute_command: Built-in completed, status: 0
+[DEBUG] run_shell: Command executed, status: 0
+[DEBUG] run_shell: Input received: valgrind ./minishell
+[DEBUG] parse_input: Input: valgrind ./minishell
+[DEBUG] parse_input: Processing token: valgrind
+[DEBUG] parse_input: Expanded token: valgrind
+[DEBUG] parse_input: Processed quotes: valgrind
+[DEBUG] parse_input: Processing token: ./minishell
+[DEBUG] parse_input: Expanded token: ./minishell
+[DEBUG] parse_input: Processed quotes: ./minishell
+[DEBUG] parse_input: Parsing completed
+[DEBUG] run_shell: Command parsed: Valid
+[DEBUG] execute_command: Executing command: valgrind
+[DEBUG] execute_child: Executing command: valgrind
+[DEBUG] execute_child: Redirections handled by caller
+[DEBUG] find_command_path: Checking command: valgrind
+[DEBUG] find_command_path: Found executable: /usr/bin/valgrind
+[DEBUG] execute_child: Executing external command: /usr/bin/valgrind
+[DEBUG] run_shell: Input received: exit
+[DEBUG] parse_input: Input: exit
+[DEBUG] parse_input: Processing token: exit
+[DEBUG] parse_input: Expanded token: exit
+[DEBUG] parse_input: Processed quotes: exit
+[DEBUG] parse_input: Parsing completed
+[DEBUG] run_shell: Command parsed: Valid
+[DEBUG] execute_command: Executing command: exit
+[DEBUG] execute_command: Child exited with status: 0
+[DEBUG] run_shell: Command executed, status: 0
+[DEBUG] run_shell: Input received
+[DEBUG] run_shell: EOF received, exiting
+[DEBUG] run_shell: Input received: echo hi
+[DEBUG] parse_input: Input: echo hi
+[DEBUG] parse_input: Processing token: echo
+[DEBUG] parse_input: Expanded token: echo
+[DEBUG] parse_input: Processed quotes: echo
+[DEBUG] parse_input: Processing token: hi
+[DEBUG] parse_input: Expanded token: hi
+[DEBUG] parse_input: Processed quotes: hi
+[DEBUG] parse_input: Parsing completed
+[DEBUG] run_shell: Command parsed: Valid
+[DEBUG] execute_command: Executing command: echo
+[DEBUG] execute_command: Built-in completed, status: 0
+[DEBUG] run_shell: Command executed, status: 0
+[DEBUG] run_shell: Input received: 
+[DEBUG] run_shell: Empty input, skipping
+[DEBUG] run_shell: Input received: exit
+[DEBUG] parse_input: Input: exit
+[DEBUG] parse_input: Processing token: exit
+[DEBUG] parse_input: Expanded token: exit
+[DEBUG] parse_input: Processed quotes: exit
+[DEBUG] parse_input: Parsing completed
+[DEBUG] run_shell: Command parsed: Valid
+[DEBUG] execute_command: Executing command: exit
+[DEBUG] run_shell: Input received: echo hi
+[DEBUG] parse_input: Input: echo hi
+[DEBUG] parse_input: Processing token: echo
+[DEBUG] parse_input: Expanded token: echo
+[DEBUG] parse_input: Processed quotes: echo
+[DEBUG] parse_input: Processing token: hi
+[DEBUG] parse_input: Expanded token: hi
+[DEBUG] parse_input: Processed quotes: hi
+[DEBUG] parse_input: Parsing completed
+[DEBUG] run_shell: Command parsed: Valid
+[DEBUG] execute_command: Executing command: echo
+[DEBUG] execute_command: Built-in completed, status: 0
+[DEBUG] run_shell: Command executed, status: 0
+[DEBUG] run_shell: Input received: exit
+[DEBUG] parse_input: Input: exit
+[DEBUG] parse_input: Processing token: exit
+[DEBUG] parse_input: Expanded token: exit
+[DEBUG] parse_input: Processed quotes: exit
+[DEBUG] parse_input: Parsing completed
+[DEBUG] run_shell: Command parsed: Valid
+[DEBUG] execute_command: Executing command: exit
+[DEBUG] run_shell: Input received
+[DEBUG] run_shell: EOF received, exiting
+[DEBUG] run_shell: Input received: exit
+[DEBUG] parse_input: Input: exit
+[DEBUG] parse_input: Processing token: exit
+[DEBUG] parse_input: Expanded token: exit
+[DEBUG] parse_input: Processed quotes: exit
+[DEBUG] parse_input: Parsing completed
+[DEBUG] run_shell: Command parsed: Valid
+[DEBUG] execute_command: Executing command: exit
+[DEBUG] run_shell: Input received: echo 0
+[DEBUG] parse_input: Input: echo 0
+[DEBUG] parse_input: Processing token: echo
+[DEBUG] parse_input: Expanded token: echo
+[DEBUG] parse_input: Processed quotes: echo
+[DEBUG] parse_input: Processing token: 0
+[DEBUG] parse_input: Expanded token: 0
+[DEBUG] parse_input: Processed quotes: 0
+[DEBUG] parse_input: Parsing completed
+[DEBUG] run_shell: Command parsed: Valid
+[DEBUG] execute_command: Executing command: echo
+[DEBUG] execute_command: Built-in completed, status: 0
+[DEBUG] run_shell: Command executed, status: 0
+[DEBUG] run_shell: Input received: exit
+[DEBUG] parse_input: Input: exit
+[DEBUG] parse_input: Processing token: exit
+[DEBUG] parse_input: Expanded token: exit
+[DEBUG] parse_input: Processed quotes: exit
+[DEBUG] parse_input: Parsing completed
+[DEBUG] run_shell: Command parsed: Valid
+[DEBUG] execute_command: Executing command: exit

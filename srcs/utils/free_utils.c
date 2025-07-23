@@ -19,11 +19,8 @@ void free_array(char **array)
         
     for (int i = 0; array[i]; i++)
     {
-        if (array[i])
-        {
-            free(array[i]);
-            array[i] = NULL;
-        }
+        free(array[i]);
+        array[i] = NULL;
     }
     free(array);
 }
@@ -53,9 +50,10 @@ void free_commands(t_cmd *cmd)
         tmp = cmd->next;
         if (cmd->args)
             free_array(cmd->args);
-        if (cmd->in_fd != STDIN_FILENO)
+        // Only close valid file descriptors
+        if (cmd->in_fd > STDERR_FILENO)
             close(cmd->in_fd);
-        if (cmd->out_fd != STDOUT_FILENO)
+        if (cmd->out_fd > STDERR_FILENO)
             close(cmd->out_fd);
         free(cmd);
         cmd = tmp;
