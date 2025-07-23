@@ -44,6 +44,9 @@ static int	add_env_var(t_env **env, char *arg)
 		value = NULL;
 	set_env_value(env, key, value);
 	free(key);
+	// Fix memory leak: free value after using it in set_env_value
+	if (value)
+		free(value);
 	return (0);
 }
 

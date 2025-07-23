@@ -122,7 +122,10 @@ int handle_pipes(t_cmd *cmd, t_env *env, t_data *data)
     int i = 0;
     int final_status = 0;
 
-    debug_log("handle_pipes", "Starting pipeline", ft_itoa(num_commands));
+    // Fix memory leak: use temporary string for debug log
+    char *num_str = ft_itoa(num_commands);
+    debug_log("handle_pipes", "Starting pipeline", num_str);
+    free(num_str);
 
     if (num_commands < 2)
         return execute_command(cmd, env, data);
@@ -264,6 +267,9 @@ int handle_pipes(t_cmd *cmd, t_env *env, t_data *data)
 
     free(pids);
     data->exit_status = final_status;
-    debug_log("handle_pipes", "Pipeline completed", ft_itoa(final_status));
+    // Fix memory leak: use temporary string for debug log
+    char *final_str = ft_itoa(final_status);
+    debug_log("handle_pipes", "Pipeline completed", final_str);
+    free(final_str);
     return final_status;
 }

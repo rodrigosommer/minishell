@@ -75,7 +75,10 @@ void run_shell(t_data *data)
         if (data->cmd)
         {
             int ret = execute_command(data->cmd, data->env, data);
-            debug_log("run_shell", "Command executed, status", ft_itoa(ret));
+            // Fix memory leak: use temporary string for debug log
+            char *ret_str = ft_itoa(ret);
+            debug_log("run_shell", "Command executed, status", ret_str);
+            free(ret_str);
             data->exit_status = ret;
             free_commands(data->cmd);
             data->cmd = NULL;

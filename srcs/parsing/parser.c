@@ -147,7 +147,10 @@ static int handle_redirection(t_cmd *cmd, char **tokens, int *i, t_env *env, t_d
         cmd->in_fd = fd;
     }
 
-    debug_log("handle_redirection", "Redirection successful, fd", ft_itoa(fd));
+    // Fix memory leak: use temporary string for debug log
+    char *fd_str = ft_itoa(fd);
+    debug_log("handle_redirection", "Redirection successful, fd", fd_str);
+    free(fd_str);
     free(file);
     
     (*i) += 2; // Skip both the redirection operator and filename

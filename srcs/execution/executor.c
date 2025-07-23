@@ -119,7 +119,10 @@ void execute_child(t_cmd *cmd, t_env *env, t_data *data)
         // Create a temporary environment pointer for builtins
         t_env *temp_env = env;
         int ret = execute_builtin(cmd, &temp_env, data);
-        debug_log("execute_child", "Built-in executed, exit status", ft_itoa(ret));
+        // Fix memory leak: use temporary string for debug log
+        char *ret_str = ft_itoa(ret);
+        debug_log("execute_child", "Built-in executed, exit status", ret_str);
+        free(ret_str);
         exit(ret);
     }
 
@@ -128,7 +131,10 @@ void execute_child(t_cmd *cmd, t_env *env, t_data *data)
         int exit_code = 127;
         if (errno == EACCES) exit_code = 126;
         else if (errno == EISDIR) exit_code = 126;
-        debug_log("execute_child", "No path found, exiting with", ft_itoa(exit_code));
+        // Fix memory leak: use temporary string for debug log
+        char *exit_str = ft_itoa(exit_code);
+        debug_log("execute_child", "No path found, exiting with", exit_str);
+        free(exit_str);
         exit(exit_code);
     }
 
@@ -160,7 +166,10 @@ int execute_command(t_cmd *cmd, t_env *env, t_data *data)
     if (cmd->next) {
         int ret = handle_pipes(cmd, env, data);
         g_command_executing = 0;
-        debug_log("execute_command", "Pipe command completed, status", ft_itoa(ret));
+        // Fix memory leak: use temporary string for debug log
+        char *ret_str = ft_itoa(ret);
+        debug_log("execute_command", "Pipe command completed, status", ret_str);
+        free(ret_str);
         return ret;
     }
         
@@ -230,7 +239,10 @@ int execute_command(t_cmd *cmd, t_env *env, t_data *data)
         
         g_command_executing = 0;
         data->exit_status = ret;
-        debug_log("execute_command", "Built-in completed, status", ft_itoa(ret));
+        // Fix memory leak: use temporary string for debug log
+        char *ret_str = ft_itoa(ret);
+        debug_log("execute_command", "Built-in completed, status", ret_str);
+        free(ret_str);
         return ret;
     }
 
@@ -276,7 +288,10 @@ int execute_command(t_cmd *cmd, t_env *env, t_data *data)
         waitpid(pid, &status, 0);
         if (WIFEXITED(status)) {
             data->exit_status = WEXITSTATUS(status);
-            debug_log("execute_command", "Child exited with status", ft_itoa(data->exit_status));
+            // Fix memory leak: use temporary string for debug log
+            char *status_str = ft_itoa(data->exit_status);
+		debug_log("execute_command", "Child exited with status", status_str);
+		free(status_str);
         }
         else if (WIFSIGNALED(status)) {
             if (WTERMSIG(status) == SIGINT) {
@@ -289,7 +304,10 @@ int execute_command(t_cmd *cmd, t_env *env, t_data *data)
             } else {
                 data->exit_status = 128 + WTERMSIG(status);
             }
-            debug_log("execute_command", "Child signaled, status", ft_itoa(data->exit_status));
+            // Fix memory leak: use temporary string for debug log
+            char *status_str = ft_itoa(data->exit_status);
+            debug_log("execute_command", "Child signaled, status", status_str);
+            free(status_str);
         }
         g_command_executing = 0;
     }
@@ -378,4 +396,3 @@ char **env_to_array(t_env *env)
     envp[i] = NULL;
     return (envp);
 }
-
