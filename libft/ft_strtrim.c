@@ -12,45 +12,32 @@
 
 #include "libft.h"
 
-char *ft_strtrim(char const *s1, char const *set)
+char	*ft_strtrim(char const *s1, char const *set)
 {
-    size_t start;
-    size_t end;
-    size_t len;
-    char *result;
+	size_t	start;
+	size_t	end;
+	size_t	len;
+	char	*result;
 
-    if (!s1 || !set)
-        return (NULL);
-    
-    // Handle empty string case immediately
-    if (!*s1)
-        return (ft_strdup(""));
-    
-    start = 0;
-    len = ft_strlen(s1);
-    if (len == 0)
-        return (ft_strdup(""));
-    
-    // Find the start index - skip characters that are in set
-    while (start < len && ft_strchr(set, s1[start]))
-        start++;
-    
-    // If entire string is in set, return empty string
-    if (start >= len)
-        return (ft_strdup(""));
-    
-    end = len;
-    // Find the end index - go backwards while characters are in set
-    // IMPORTANT: Check end > start to prevent underflow
-    while (end > start && ft_strchr(set, s1[end - 1]))
-        end--;
-    
-    len = end - start;
-    result = malloc(len + 1);
-    if (!result)
-        return (NULL);
-    
-    ft_strlcpy(result, s1 + start, len + 1);
-    return (result);
+	if (!s1 || !set)
+		return (NULL);
+	if (!*s1)
+		return (ft_strdup(""));
+	start = 0;
+	len = ft_strlen(s1);
+	if (len == 0)
+		return (ft_strdup(""));
+	while (start < len && ft_strchr(set, s1[start]))
+		start++;
+	if (start >= len)
+		return (ft_strdup(""));
+	end = len;
+	while (end > start && ft_strchr(set, s1[end - 1]))
+		end--;
+	len = end - start;
+	result = malloc(len + 1);
+	if (!result)
+		return (NULL);
+	ft_strlcpy(result, s1 + start, len + 1);
+	return (result);
 }
-
