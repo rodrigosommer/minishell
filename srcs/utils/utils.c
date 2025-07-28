@@ -12,35 +12,27 @@
 
 #include "../../includes/minishell.h"
 
-char *ft_strreplace(char *str, char *old_str, char *new_str)
+char	*ft_strreplace(char *str, char *old_str, char *new_str)
 {
-    char *result;
-    char *pos;
-    int old_len;
-    int new_len;
-    int result_len;
+	char	*result;
+	char	*pos;
+	int		old_len;
+	int		new_len;
+	int		result_len;
 
-    if (!str || !old_str || !new_str)
-        return NULL;
-        
-    pos = ft_strnstr(str, old_str, ft_strlen(str));
-    if (!pos)
-        return ft_strdup(str);
-        
-    old_len = ft_strlen(old_str);
-    new_len = ft_strlen(new_str);
-    result_len = ft_strlen(str) - old_len + new_len;
-    
-    result = malloc(result_len + 1);
-    if (!result)
-        return NULL;
-        
-    // Copy part before the match
-    ft_strlcpy(result, str, pos - str + 1);
-    // Append replacement
-    ft_strlcat(result, new_str, result_len + 1);
-    // Append part after the match
-    ft_strlcat(result, pos + old_len, result_len + 1);
-    
-    return result;
+	if (!str || !old_str || !new_str)
+		return (NULL);
+	pos = ft_strnstr(str, old_str, ft_strlen(str));
+	if (!pos)
+		return (ft_strdup(str));
+	old_len = ft_strlen(old_str);
+	new_len = ft_strlen(new_str);
+	result_len = ft_strlen(str) - old_len + new_len;
+	result = malloc(result_len + 1);
+	if (!result)
+		return (NULL);
+	ft_strlcpy(result, str, pos - str + 1);
+	ft_strlcat(result, new_str, result_len + 1);
+	ft_strlcat(result, pos + old_len, result_len + 1);
+	return (result);
 }

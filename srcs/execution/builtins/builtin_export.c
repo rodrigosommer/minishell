@@ -44,31 +44,30 @@ static int	add_env_var(t_env **env, char *arg)
 		value = NULL;
 	set_env_value(env, key, value);
 	free(key);
-	// Fix memory leak: free value after using it in set_env_value
 	if (value)
 		free(value);
 	return (0);
 }
 
-int builtin_export(t_cmd *cmd, t_env **env)
+int	builtin_export(t_cmd *cmd, t_env **env)
 {
-    int i;
-    int ret;
+	int	i;
+	int	ret;
 
-    if (!cmd->args[1])
-        return (print_export(*env));
-    ret = 0;
-    i = 1;
-    while (cmd->args[i])
-    {
-        if (!is_valid_env_key(cmd->args[i]))
-        {
-            print_error("export", cmd->args[i], "not a valid identifier");
-            ret = 1; // Set ret to 1 but continue processing
-        }
-        else if (add_env_var(env, cmd->args[i]))
-            return (1);
-        i++;
-    }
-    return (ret);
+	if (!cmd->args[1])
+		return (print_export(*env));
+	ret = 0;
+	i = 1;
+	while (cmd->args[i])
+	{
+		if (!is_valid_env_key(cmd->args[i]))
+		{
+			print_error("export", cmd->args[i], "not a valid identifier");
+			ret = 1;
+		}
+		else if (add_env_var(env, cmd->args[i]))
+			return (1);
+		i++;
+	}
+	return (ret);
 }

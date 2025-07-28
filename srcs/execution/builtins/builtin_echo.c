@@ -12,24 +12,22 @@
 
 #include "../../../includes/minishell.h"
 
-static int is_valid_n_flag(char *arg)
+static int	is_valid_n_flag(char *arg)
 {
-    int i;
+	int	i;
 
-    if (!arg || arg[0] != '-')
-        return 0;
-    
-    i = 1;
-    if (!arg[i]) // Just "-" is not a valid -n flag
-        return 0;
-    
-    while (arg[i])
-    {
-        if (arg[i] != 'n')
-            return 0;
-        i++;
-    }
-    return 1;
+	if (!arg || arg[0] != '-')
+		return (0);
+	i = 1;
+	if (!arg[i])
+		return (0);
+	while (arg[i])
+	{
+		if (arg[i] != 'n')
+			return (0);
+		i++;
+	}
+	return (1);
 }
 
 int	builtin_echo(t_cmd *cmd)
@@ -39,14 +37,11 @@ int	builtin_echo(t_cmd *cmd)
 
 	i = 1;
 	newline = 1;
-	
-	// Handle multiple -n flags (like -n, -nn, -nnn, etc.)
 	while (cmd->args[i] && is_valid_n_flag(cmd->args[i]))
 	{
 		newline = 0;
 		i++;
 	}
-	
 	while (cmd->args[i])
 	{
 		ft_putstr_fd(cmd->args[i], STDOUT_FILENO);
@@ -56,6 +51,5 @@ int	builtin_echo(t_cmd *cmd)
 	}
 	if (newline)
 		ft_putchar_fd('\n', STDOUT_FILENO);
-	
 	return (0);
 }

@@ -10,7 +10,6 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-
 #include "../../../includes/minishell.h"
 
 static char	*get_cd_path(t_cmd *cmd, t_env *env)
@@ -41,36 +40,32 @@ static char	*get_cd_path(t_cmd *cmd, t_env *env)
 	return (path);
 }
 
-int builtin_cd(t_cmd *cmd, t_env *env)
+int	builtin_cd(t_cmd *cmd, t_env *env)
 {
-    char cwd[PATH_MAX];
-    char *oldpwd;
-    char *path;
+	char	cwd[PATH_MAX];
+	char	*oldpwd;
+	char	*path;
 
-    // Check for too many arguments
-    if (cmd->args[1] && cmd->args[2])
-    {
-        print_error("cd", NULL, "too many arguments");
-        return (1);
-    }
-
-    path = get_cd_path(cmd, env);
-    if (!path)
-        return (1);
-
-    oldpwd = getcwd(cwd, PATH_MAX);
-    if (chdir(path) == -1)
-    {
-        print_error("cd", cmd->args[1], strerror(errno));
-        return (1);
-    }
-
-    set_env_value(&env, "OLDPWD", oldpwd);
-    if (!getcwd(cwd, PATH_MAX))
-    {
-        print_error("cd", "getcwd", "getcwd failed");
-        return (1);
-    }
-    set_env_value(&env, "PWD", cwd);
-    return (0);
+	if (cmd->args[1] && cmd->args[2])
+	{
+		print_error("cd", NULL, "too many arguments");
+		return (1);
+	}
+	path = get_cd_path(cmd, env);
+	if (!path)
+		return (1);
+	oldpwd = getcwd(cwd, PATH_MAX);
+	if (chdir(path) == -1)
+	{
+		print_error("cd", cmd->args[1], strerror(errno));
+		return (1);
+	}
+	set_env_value(&env, "OLDPWD", oldpwd);
+	if (!getcwd(cwd, PATH_MAX))
+	{
+		print_error("cd", "getcwd", "getcwd failed");
+		return (1);
+	}
+	set_env_value(&env, "PWD", cwd);
+	return (0);
 }

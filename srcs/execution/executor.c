@@ -115,6 +115,7 @@ void	execute_child(t_cmd *cmd, t_env *env, t_data *data)
 	int		exit_code;
 	char	*ret_str;
 	char	*exit_str;
+	t_env	*temp_env;
 
 	debug_log("execute_child", "Executing command",
 		cmd->args ? cmd->args[0] : "NULL");
@@ -123,7 +124,7 @@ void	execute_child(t_cmd *cmd, t_env *env, t_data *data)
 		close(fd);
 	if (is_builtin(cmd))
 	{
-		t_env *temp_env = env;
+		temp_env = env;
 		ret = execute_builtin(cmd, &temp_env, data);
 		ret_str = ft_itoa(ret);
 		debug_log("execute_child", "Built-in executed, exit status", ret_str);
@@ -134,8 +135,10 @@ void	execute_child(t_cmd *cmd, t_env *env, t_data *data)
 	if (!path)
 	{
 		exit_code = 127;
-		if (errno == EACCES) exit_code = 126;
-		else if (errno == EISDIR) exit_code = 126;
+		if (errno == EACCES)
+			exit_code = 126;
+		else if (errno == EISDIR)
+			exit_code = 126;
 		exit_str = ft_itoa(exit_code);
 		debug_log("execute_child", "No path found, exiting with", exit_str);
 		free(exit_str);
@@ -190,7 +193,7 @@ int	execute_command(t_cmd *cmd, t_env *env, t_data *data)
 				g_command_executing = 0;
 				data->exit_status = 1;
 				return (1);
-				}
+			}
 			if (dup2(cmd->out_fd, STDOUT_FILENO) == -1)
 			{
 				print_error("dup2", NULL, strerror(errno));
